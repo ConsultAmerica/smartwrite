@@ -1,0 +1,23 @@
+{
+  "name": "smartwrite-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SmartWrite AI - run backend + desktop together",
+  "scripts": {
+    "predev": "scripts\\free-dev-ports.cmd",
+    "predev:web": "scripts\\free-dev-ports.cmd",
+    "dev": "concurrently -k -n backend,desktop -c blue,magenta \"npm run dev:backend\" \"npm run dev:desktop\"",
+    "dev:web": "concurrently -k -n backend,web -c blue,green \"npm run dev:backend\" \"npm run dev:web:frontend\"",
+    "dev:backend": "scripts\\start-backend.cmd",
+    "dev:desktop": "npm run dev --prefix desktop-app",
+    "dev:web:frontend": "scripts\\start-web-dev.cmd",
+    "build:web": "npm run build --prefix desktop-app",
+    "start:web": "scripts\\start-web-prod.cmd",
+    "preview:web": "npm run build:web && concurrently -k -n backend,preview -c blue,green \"npm run dev:backend\" \"npm run preview --prefix desktop-app -- --host 127.0.0.1\"",
+    "install:all": "npm install && npm install --prefix desktop-app",
+    "setup": "cd backend && python -m pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

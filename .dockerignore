@@ -1,0 +1,11 @@
+node_modules
+desktop-app/node_modules
+desktop-app/dist
+.venv
+__pycache__
+.git
+*.md
+.env
+ai-service
+desktop
+terminals

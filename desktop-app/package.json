@@ -1,0 +1,31 @@
+{
+  "name": "smartwrite-desktop",
+  "version": "1.0.0",
+  "description": "SmartWrite AI — Desktop Writing Assistant",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "predev": "call ..\\scripts\\kill-port.cmd 5173",
+    "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://127.0.0.1:5173 && cross-env NODE_ENV=development electron .",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "start": "npm run build && cross-env NODE_ENV=production electron ."
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "wait-on": "^8.0.1"
+  }
+}

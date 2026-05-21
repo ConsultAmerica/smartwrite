@@ -1,0 +1,63 @@
+.ai-rewrite-panel {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.ai-rewrite-panel h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.rewrite-mode {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.rewrite-block {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.rewrite-block.improved {
+  border-color: var(--accent);
+  background: var(--highlight);
+}
+
+.block-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.rewrite-block p {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rewrite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ai-rewrite-panel .loading {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ai-rewrite-panel .btn.ghost {
+  font-size: 12px;
+  color: var(--text-muted);
+}

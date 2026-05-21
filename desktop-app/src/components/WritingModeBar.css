@@ -1,0 +1,72 @@
+.writing-mode-bar {
+  margin-bottom: 12px;
+  animation: mode-fade-in 0.2s ease;
+}
+
+@keyframes mode-fade-in {
+  from {
+    opacity: 0.6;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.writing-mode-bar-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: var(--highlight);
+  position: relative;
+  z-index: 2;
+}
+
+.mode-pill {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.mode-description {
+  flex: 1 1 200px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.mode-sample-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: transparent;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.mode-sample-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.mode-sample-btn:active {
+  transform: scale(0.98);
+}

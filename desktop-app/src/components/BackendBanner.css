@@ -1,0 +1,23 @@
+.backend-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 20px;
+  background: rgba(248, 113, 113, 0.1);
+  border-bottom: 1px solid rgba(248, 113, 113, 0.35);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.backend-banner strong {
+  color: var(--error);
+}
+
+.backend-banner code {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}

@@ -1,0 +1,15 @@
+.venv/
+node_modules/
+desktop-app/dist/
+desktop-app/node_modules/
+database/*.db
+backend/.env
+.env
+.env.local
+desktop-app/.env
+desktop-app/.env.local
+desktop-app/.env.production
+__pycache__/
+*.pyc
+.DS_Store
+*.log

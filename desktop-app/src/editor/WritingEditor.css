@@ -1,0 +1,139 @@
+.writing-editor {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.editor-backdrop,
+.editor-textarea {
+  flex: 1;
+  min-height: 0;
+  padding: 20px 24px 8px;
+  font-size: 16px;
+  line-height: 1.65;
+  font-family: var(--mono);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: auto;
+}
+
+.editor-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 36px;
+  pointer-events: none;
+  color: transparent;
+  z-index: 1;
+}
+
+.editor-backdrop .issue-mark {
+  pointer-events: auto;
+  cursor: pointer;
+  color: transparent;
+  text-decoration: underline wavy var(--mark-color);
+  text-underline-offset: 3px;
+  transition: background 0.12s;
+}
+
+.editor-backdrop .issue-mark.hovered,
+.editor-backdrop .issue-mark.active {
+  background: var(--highlight);
+  border-radius: 2px;
+}
+
+.editor-textarea {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  caret-color: var(--accent);
+}
+
+.editor-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.issue-popup {
+  position: absolute;
+  z-index: 10;
+  min-width: 180px;
+  max-width: 280px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.issue-popup .popup-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.issue-popup strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+
+.issue-popup .arrow {
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.popup-apply {
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.editor-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+  z-index: 3;
+}
+
+.editor-footer .sep {
+  opacity: 0.4;
+}
+
+.save-status.saved {
+  color: var(--success);
+}
+
+.save-status.unsaved {
+  color: var(--warning);
+}
+
+.save-status.saving {
+  color: var(--accent);
+}

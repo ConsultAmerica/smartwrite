@@ -1,0 +1,65 @@
+.clarity-panel {
+  padding: 0 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.clarity-panel h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clarity);
+  margin-bottom: 10px;
+}
+
+.clarity-ok {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.clarity-card {
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.clarity-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--clarity);
+  letter-spacing: 0.05em;
+}
+
+.clarity-msg {
+  font-size: 13px;
+  margin: 8px 0 6px;
+  line-height: 1.4;
+}
+
+.clarity-sentence {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+.clarity-suggest-block {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+}
+
+.clarity-suggest-block .label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.clarity-suggest-block p {
+  font-size: 12px;
+  line-height: 1.45;
+}
