@@ -4,25 +4,18 @@ Split hosting: **Vercel** serves the React UI; **Render** runs the FastAPI API.
 
 | Service | Hosts | URL example |
 |---------|--------|-------------|
-| Frontend | [Vercel](https://vercel.com) | `https://smartwrite-ai.vercel.app` |
+| Frontend | [Vercel](https://vercel.com) | `https://grammarly-app.vercel.app` (or your Vercel URL) |
 | API | [Render](https://render.com) | `https://smartwrite-api.onrender.com` |
 
 ---
 
-## 1. Push to GitHub
+## 1. GitHub repo
+
+**Repo:** https://github.com/N-sfd/grammarly-app
 
 ```powershell
 cd "E:\projects\AI Projects\grammarly-app"
-git init
-git add .
-git commit -m "Initial commit: SmartWrite AI web + desktop"
-```
-
-Create a new empty repo on GitHub (e.g. `smartwrite-ai`), then:
-
-```powershell
-git branch -M main
-git remote add origin https://github.com/YOUR_USER/smartwrite-ai.git
+git remote set-url origin https://github.com/N-sfd/grammarly-app.git
 git push -u origin main
 ```
 
@@ -64,7 +57,7 @@ git push -u origin main
 |------|--------|
 | `VITE_API_BASE` | `https://YOUR-API.onrender.com` (no trailing slash) |
 
-5. Deploy → copy your Vercel URL, e.g. `https://smartwrite-ai.vercel.app`
+5. Deploy → copy your Vercel URL, e.g. `https://grammarly-app.vercel.app`
 
 ---
 
@@ -75,7 +68,7 @@ In **Render** → your API service → **Environment**:
 Update `CORS_ORIGINS` to include your live Vercel URL:
 
 ```env
-CORS_ORIGINS=https://smartwrite-ai.vercel.app,http://localhost:5173,http://127.0.0.1:5173
+CORS_ORIGINS=https://grammarly-app.vercel.app,http://localhost:5173,http://127.0.0.1:5173
 ```
 
 Save → Render redeploys. Without this, the browser blocks API calls from Vercel.
