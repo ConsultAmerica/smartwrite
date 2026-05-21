@@ -1,5 +1,7 @@
 # SmartWrite AI — Desktop Writing Assistant
 
+**Deploy on the web:** [DEPLOY.md](./DEPLOY.md) — Vercel (UI) + Render (API).
+
 SmartWrite AI is a desktop writing assistant that helps users improve grammar, clarity, tone, and professional writing. The app detects writing issues, provides correction suggestions, supports AI-powered rewriting, and includes specialized modes for general writing, emails, and resumes.
 
 ## Demo text
