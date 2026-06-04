@@ -1,0 +1,75 @@
+.before-after {
+  margin: 12px;
+  padding: 14px;
+}
+
+.ba-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ba-head h3 {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ba-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ba-col {
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.ba-col.improved {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.ba-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.ba-col p {
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.diff-changed {
+  background: rgba(239, 68, 68, 0.18);
+  color: var(--text);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.ba-col.improved .diff-changed {
+  background: rgba(34, 197, 94, 0.22);
+}
+
+.ba-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .ba-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -7,9 +7,17 @@ interface Props {
   onReplace: () => void;
   onCopy: () => void;
   onDismiss: () => void;
+  onTryAgain?: () => void;
 }
 
-export default function AiRewritePanel({ preview, loading, onReplace, onCopy, onDismiss }: Props) {
+export default function AiRewritePanel({
+  preview,
+  loading,
+  onReplace,
+  onCopy,
+  onDismiss,
+  onTryAgain,
+}: Props) {
   if (!preview && !loading) return null;
 
   return (
@@ -34,6 +42,11 @@ export default function AiRewritePanel({ preview, loading, onReplace, onCopy, on
             <button type="button" className="btn secondary" onClick={onCopy}>
               Copy
             </button>
+            {onTryAgain && (
+              <button type="button" className="btn secondary" onClick={onTryAgain} disabled={loading}>
+                Try Again
+              </button>
+            )}
             <button type="button" className="btn ghost" onClick={onDismiss}>
               Dismiss
             </button>

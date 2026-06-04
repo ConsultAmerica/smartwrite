@@ -158,69 +158,9 @@ def _parse_matches(text: str, matches: list[dict]) -> list[GrammarIssue]:
     return issues
 
 
-def _custom_issues(text: str) -> list[GrammarIssue]:
-    """Extra checks LanguageTool often misses in portfolio demos."""
+def _custom_issues_general(text: str) -> list[GrammarIssue]:
+    """General-mode extras — grammar, clarity, punctuation (not resume/healthcare)."""
     custom: list[GrammarIssue] = []
-
-    for m in re.finditer(r"\bAI-peered\s+agent\b", text, re.IGNORECASE):
-        phrase = text[m.start() : m.end()]
-        custom.append(
-            GrammarIssue(
-                id=f"custom-ai-peered-{m.start()}",
-                message=f'"{phrase}" should be "AI-powered agent."',
-                short_message="Word choice",
-                issue_title="Word choice",
-                problem=phrase,
-                suggestion="AI-powered agent",
-                why='"AI-powered" is the correct phrase for an agent that uses artificial intelligence.',
-                offset=m.start(),
-                length=len(phrase),
-                replacements=["AI-powered agent"],
-                rule_id="CUSTOM_AI_PEERED",
-                category="word_choice",
-                issue_type="word_choice",
-            )
-        )
-
-    for m in re.finditer(r"\bWorked\s+on\b", text):
-        phrase = text[m.start() : m.end()]
-        custom.append(
-            GrammarIssue(
-                id=f"custom-worked-on-{m.start()}",
-                message="Use a stronger action verb than “Worked on.”",
-                short_message="Style",
-                issue_title="Style",
-                problem=phrase,
-                suggestion="Developed",
-                why="Resume bullets should start with strong action verbs (Developed, Led, Built).",
-                offset=m.start(),
-                length=len(phrase),
-                replacements=["Developed", "Led", "Built"],
-                rule_id="CUSTOM_WORKED_ON",
-                category="style",
-                issue_type="style",
-            )
-        )
-
-    for m in re.finditer(r"\bnot\s+tidied\s+until\b", text, re.IGNORECASE):
-        phrase = text[m.start() : m.end()]
-        custom.append(
-            GrammarIssue(
-                id=f"custom-not-tidied-{m.start()}",
-                message=f'"{phrase}" may be incorrect. Did you mean "not notified until"?',
-                short_message="Word choice / Context error",
-                issue_title="Word choice / Context error",
-                problem=phrase,
-                suggestion="not notified until",
-                why='"Notified" fits patient outreach; "tidied" does not belong in clinical follow-up context.',
-                offset=m.start(),
-                length=len(phrase),
-                replacements=["not notified until"],
-                rule_id="CUSTOM_NOT_TIDIED",
-                category="word_choice",
-                issue_type="word_choice",
-            )
-        )
 
     for m in re.finditer(r"\bthe\s+biggest\s+improving\s+now\b", text, re.IGNORECASE):
         phrase = text[m.start() : m.end()]
@@ -460,7 +400,9 @@ def _check_local(text: str) -> list[dict]:
 
 
 async def check_grammar(
-    text: str, user_dictionary: list[str] | None = None
+    text: str,
+    user_dictionary: list[str] | None = None,
+    mode: str = "general",
 ) -> GrammarCheckResult:
     if not text.strip():
         return GrammarCheckResult(
@@ -483,7 +425,9 @@ async def check_grammar(
     lt_issues = _filter_false_positives(
         text, _parse_matches(text, matches), user_dictionary
     )
-    custom = _filter_false_positives(text, _custom_issues(text), user_dictionary)
+    custom = _filter_false_positives(
+        text, _custom_issues_general(text), user_dictionary
+    )
     word_issues = _merge_issues(lt_issues, custom)
     clarity_score, clarity_suggestions = _clarity_score_and_suggestions(text)
     clarity_issues = _clarity_issues_from_suggestions(text, clarity_suggestions[:1])

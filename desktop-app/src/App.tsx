@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import AiRewritePanel from "./components/AiRewritePanel";
-import DocumentsSidebar from "./components/DocumentsSidebar";
+import AppSidebar from "./components/AppSidebar";
+import ScorePanel from "./components/ScorePanel";
+import BeforeAfterPanel from "./components/BeforeAfterPanel";
+import EmptyState from "./components/EmptyState";
 import Header from "./components/Header";
 import IssuesPanel from "./components/IssuesPanel";
 import RewritePanel from "./components/RewritePanel";
-import TonePanel from "./components/TonePanel";
 import BackendBanner from "./components/BackendBanner";
 import Toast from "./components/Toast";
 import WritingModeBar from "./components/WritingModeBar";
@@ -19,16 +20,25 @@ import {
 } from "./services/dictionary";
 import type {
   AiRewritePreview,
-  Document,
   GrammarIssue,
+  HistoryEntry,
   SaveStatus,
+  SidebarView,
   Theme,
   ToneMode,
   ToneResult,
   WritingMode,
 } from "./types";
-import { detectModeFromContent, MODE_INFO } from "./constants/modeConfig";
-import { DEMO_SAMPLE_TEXT } from "./constants/demoText";
+import { MODE_INFO } from "./constants/modeConfig";
+import { getTemplate } from "./constants/templates";
+import { buildModeSummary } from "./services/modeTone";
+import { saveLocalDraft } from "./services/draftStorage";
+import {
+  deleteHistoryEntry,
+  downloadTextFile,
+  loadHistory,
+  saveHistoryEntry,
+} from "./services/scoring";
 import "./App.css";
 
 function applyReplacement(text: string, issue: GrammarIssue, replacement: string): string {
@@ -42,19 +52,26 @@ function replaceSelection(text: string, start: number, end: number, replacement:
   return text.slice(0, start) + replacement + text.slice(end);
 }
 
+const INITIAL_TEXT = MODE_INFO.general.sampleText;
+
 export default function App() {
   const editorRef = useRef<WritingEditorHandle>(null);
-  const textRef = useRef(DEMO_SAMPLE_TEXT);
+  const textRef = useRef(INITIAL_TEXT);
   const grammarRequestId = useRef(0);
   const toneRequestId = useRef(0);
   const didInitialCheck = useRef(false);
+  const writingModeRef = useRef<WritingMode>("general");
 
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem("smartwrite-theme");
-    return (saved as Theme) || "dark";
+    return (saved as Theme) || "light";
   });
-  const [text, setText] = useState(DEMO_SAMPLE_TEXT);
-  const [writingMode, setWritingMode] = useState<WritingMode>("healthcare");
+  const [text, setText] = useState(INITIAL_TEXT);
+  const [writingMode, setWritingMode] = useState<WritingMode>("general");
+  writingModeRef.current = writingMode;
+  const [sidebarView, setSidebarView] = useState<SidebarView>("editor");
+  const [mobileSidebar, setMobileSidebar] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [issues, setIssues] = useState<GrammarIssue[]>([]);
   const [ignoredIds, setIgnoredIds] = useState<Set<string>>(new Set());
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
@@ -67,7 +84,6 @@ export default function App() {
   const [rewriteLoading, setRewriteLoading] = useState(false);
   const [aiPreview, setAiPreview] = useState<AiRewritePreview | null>(null);
   const [backendOnline, setBackendOnline] = useState(false);
-  const [documents, setDocuments] = useState<Document[]>([]);
   const [docId, setDocId] = useState<number | null>(null);
   const [docTitle, setDocTitle] = useState("Untitled Document");
   const [saving, setSaving] = useState(false);
@@ -77,6 +93,7 @@ export default function App() {
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rewritePanelRef = useRef<HTMLElement>(null);
   const [editorSessionKey, setEditorSessionKey] = useState(0);
+  const [lastEdited, setLastEdited] = useState<string | null>(() => new Date().toISOString());
   const { messages: toasts, showToast, dismissToast } = useToast();
 
   const apiBaseUrl =
@@ -102,10 +119,17 @@ export default function App() {
       return {
         ...base,
         suggestion_count: count,
-        summary: api.buildWritingSummary(count, base.grammar_score),
+        summary: buildModeSummary(writingMode, count, {
+          grammar: base.grammar_score,
+          clarity: base.clarity_score,
+          strength: base.resume_strength_score ?? base.grammar_score,
+          impact: base.impact_score,
+          professionalism: base.professionalism_score ?? base.grammar_score,
+          clinical: base.clinical_clarity_score ?? base.clarity_score,
+        }),
       };
     },
-    [applyIssueFilters]
+    [applyIssueFilters, writingMode]
   );
 
   useEffect(() => {
@@ -119,18 +143,9 @@ export default function App() {
 
   const loadDocuments = useCallback(async () => {
     try {
-      let { documents: docs } = await api.listDocuments();
-      if (docs.length === 0) {
-        try {
-          const seeded = await api.seedSampleDocuments();
-          docs = seeded.documents;
-        } catch {
-          /* seed optional */
-        }
-      }
-      setDocuments(docs);
+      await api.listDocuments();
     } catch {
-      /* offline — app still works without saved docs */
+      /* API optional — history uses localStorage */
     }
   }, []);
 
@@ -163,10 +178,11 @@ export default function App() {
   }, []);
 
   const runGrammarCheck = useCallback(
-    async (options?: { silent?: boolean }) => {
+    async (options?: { silent?: boolean; mode?: WritingMode }) => {
       const content = textRef.current;
       if (!content.trim()) return;
 
+      const mode = options?.mode ?? writingModeRef.current;
       const requestId = ++grammarRequestId.current;
       const silent = options?.silent ?? false;
 
@@ -174,7 +190,7 @@ export default function App() {
       else setAutoChecking(true);
 
       try {
-        const result = await api.checkGrammar(content, docId, userDictionary);
+        const result = await api.checkGrammar(content, docId, userDictionary, mode);
         if (requestId !== grammarRequestId.current) return;
         if (content !== textRef.current) return;
 
@@ -190,25 +206,28 @@ export default function App() {
         const scores = api.grammarResultToTone(
           result,
           tone?.tone ?? "Neutral",
-          visibleCount
+          visibleCount,
+          { mode, text: content }
         );
         setTone(scores);
 
-        void api.detectTone(content, userDictionary).then((t) => {
-          if (requestId !== grammarRequestId.current) return;
-          setTone(
-            syncToneCounts(
-              {
-                ...t,
-                grammar_score: result.grammar_score,
-                clarity_score: result.clarity_score,
-                clarity_suggestions: result.clarity_suggestions,
-              },
-              filtered,
-              ignored
-            )
-          );
-        });
+        if (mode === "general") {
+          void api.detectTone(content, userDictionary).then((t) => {
+            if (requestId !== grammarRequestId.current) return;
+            setTone(
+              syncToneCounts(
+                {
+                  ...t,
+                  grammar_score: result.grammar_score,
+                  clarity_score: result.clarity_score,
+                  clarity_suggestions: result.clarity_suggestions,
+                },
+                filtered,
+                ignored
+              )
+            );
+          });
+        }
       } catch (e) {
         console.error(e);
         if (!silent) {
@@ -221,27 +240,32 @@ export default function App() {
         }
       }
     },
-    [docId, tone?.tone, userDictionary, ignoredIds, applyIssueFilters, syncToneCounts, showToast]
+    [
+      docId,
+      tone?.tone,
+      userDictionary,
+      ignoredIds,
+      applyIssueFilters,
+      syncToneCounts,
+      showToast,
+    ]
   );
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        void runGrammarCheck();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [runGrammarCheck]);
 
   // Initial check when backend comes online
   useEffect(() => {
     if (backendOnline && !didInitialCheck.current && textRef.current.length > 10) {
       didInitialCheck.current = true;
-      void runGrammarCheck({ silent: true });
+      void runGrammarCheck({ silent: true, mode: writingModeRef.current });
     }
   }, [backendOnline, runGrammarCheck]);
+
+  // Run mode analysis when tab has text but no results yet (client rules work offline)
+  useEffect(() => {
+    if (text.trim().length <= 10 || checking || autoChecking) return;
+    if (issues.length === 0 && tone === null) {
+      void runGrammarCheck({ silent: true, mode: writingModeRef.current });
+    }
+  }, [writingMode, text, issues.length, tone, checking, autoChecking, runGrammarCheck]);
 
   // Slow auto-check while typing — keeps previous results visible until new ones arrive
   useEffect(() => {
@@ -363,8 +387,13 @@ export default function App() {
     setRewriteLoading(true);
     try {
       const out = await api.improveResume(target, action, docId);
-      setAiPreview({ original: target, improved: out.rewritten_text, label });
-      showToast(`${label} ready — review below`, "success");
+      setAiPreview({
+        original: target,
+        improved: out.rewritten_text,
+        label,
+        action,
+        kind: "resume",
+      });
     } catch {
       showToast("Resume rewrite failed.", "error");
     } finally {
@@ -402,26 +431,87 @@ export default function App() {
     if (aiPreview) await navigator.clipboard.writeText(aiPreview.improved);
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    const title = docTitle.trim() || "Untitled Document";
+    const content = textRef.current;
+    if (!content.trim() && !title) {
+      showToast("Nothing to save — add a title or some text first.", "info");
+      return;
+    }
+
     setSaving(true);
     setSaveStatus("saving");
     try {
-      const doc = await api.saveDocument(docTitle, text, docId);
-      setDocId(doc.id);
-      setDocTitle(doc.title);
+      if (backendOnline) {
+        const doc = await api.saveDocument(title, content, docId);
+        setDocId(doc.id);
+        setDocTitle(doc.title);
+        saveLocalDraft(doc.title, content, doc.id);
+        setSaveStatus("saved");
+        showToast(`Saved "${doc.title}"`, "success");
+        const entry = saveHistoryEntry({
+          title: doc.title,
+          content,
+          mode: writingModeRef.current,
+          score: tone?.writing_scores?.overall ?? tone?.grammar_score ?? 0,
+          preview: "",
+        });
+        void entry;
+        setHistory(loadHistory());
+        await loadDocuments();
+      } else {
+        saveLocalDraft(title, content, docId ?? undefined);
+        setSaveStatus("saved");
+        saveHistoryEntry({
+          title,
+          content,
+          mode: writingModeRef.current,
+          score: tone?.writing_scores?.overall ?? tone?.grammar_score ?? 0,
+          preview: "",
+        });
+        setHistory(loadHistory());
+        showToast("Saved locally — start the backend to sync to the server.", "info");
+      }
+    } catch (e) {
+      console.error(e);
+      saveLocalDraft(title, content, docId ?? undefined);
       setSaveStatus("saved");
-      await loadDocuments();
-    } catch {
-      setSaveStatus("unsaved");
-      alert("Save failed — is the backend running?");
+      saveHistoryEntry({
+        title,
+        content,
+        mode: writingModeRef.current,
+        score: tone?.writing_scores?.overall ?? tone?.grammar_score ?? 0,
+        preview: "",
+      });
+      setHistory(loadHistory());
+      showToast(
+        "Could not reach the API — draft saved in this browser only.",
+        "error"
+      );
     } finally {
       setSaving(false);
     }
-  };
+  }, [backendOnline, docTitle, docId, showToast, loadDocuments]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        void runGrammarCheck({ mode: writingModeRef.current });
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        void handleSave();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [runGrammarCheck, handleSave]);
 
   const handleTextChange = (value: string) => {
     setText(value);
     setSaveStatus("unsaved");
+    setLastEdited(new Date().toISOString());
   };
 
   const handleNewDoc = () => {
@@ -429,30 +519,13 @@ export default function App() {
     setDocId(null);
     setDocTitle("Untitled Document");
     setSaveStatus("unsaved");
+    textRef.current = "";
     setText("");
     setIssues([]);
     setIgnoredIds(new Set());
     setTone(null);
     setAiPreview(null);
     didInitialCheck.current = false;
-  };
-
-  const handleSelectDoc = (doc: Document) => {
-    grammarRequestId.current += 1;
-    setDocId(doc.id);
-    setDocTitle(doc.title);
-    textRef.current = doc.content;
-    setText(doc.content);
-    setEditorSessionKey((k) => k + 1);
-    const detected = detectModeFromContent(doc.content, doc.title);
-    if (detected) setWritingMode(detected);
-    setIssues([]);
-    setIgnoredIds(new Set());
-    setAiPreview(null);
-    didInitialCheck.current = false;
-    if (backendOnline && doc.content.length > 10) {
-      setTimeout(() => void runGrammarCheck({ silent: true }), 100);
-    }
   };
 
   const applyModeSample = useCallback(
@@ -471,6 +544,7 @@ export default function App() {
 
       const sample = info.sampleText;
       textRef.current = sample;
+      writingModeRef.current = mode;
 
       flushSync(() => {
         setWritingMode(mode);
@@ -486,17 +560,12 @@ export default function App() {
         setEditorSessionKey((k) => k + 1);
       });
 
-      if (backendOnline) {
-        void runGrammarCheck({ silent: false });
-      } else if (!options?.silent) {
-        showToast("Sample loaded — start backend to run grammar check.", "info");
-      }
-
       if (!options?.silent) {
-        showToast(`${info.label} sample loaded`, "success");
+        showToast(`${info.label} sample loaded — checking…`, "success");
       }
+      void runGrammarCheck({ silent: false, mode });
     },
-    [backendOnline, runGrammarCheck, showToast]
+    [runGrammarCheck, showToast]
   );
 
   const handleModeChange = (mode: WritingMode) => {
@@ -506,15 +575,71 @@ export default function App() {
     });
   };
 
-  const handleDeleteDoc = async (id: number) => {
-    try {
-      await api.deleteDocument(id);
-      if (docId === id) handleNewDoc();
-      await loadDocuments();
-    } catch {
-      alert("Delete failed.");
+  const handleClearEditor = () => {
+    if (!text.trim() || window.confirm("Clear all text in the editor?")) {
+      setText("");
+      textRef.current = "";
+      setIssues([]);
+      setTone(null);
+      setAiPreview(null);
+      setSaveStatus("unsaved");
     }
   };
+
+  const handleCopyText = async () => {
+    if (!text.trim()) {
+      showToast("Nothing to copy.", "info");
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+    showToast("Copied to clipboard.", "success");
+  };
+
+  const handleDownloadText = () => {
+    if (!text.trim()) {
+      showToast("Nothing to download — add some text first.", "info");
+      return;
+    }
+    const safeName = (docTitle.trim() || "smartwrite-draft").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+    downloadTextFile(`${safeName}.txt`, text);
+    showToast("Download started.", "success");
+  };
+
+  const handleSelectTemplate = (templateId: string) => {
+    const t = getTemplate(templateId);
+    if (!t) return;
+    setWritingMode(t.mode);
+    writingModeRef.current = t.mode;
+    setDocTitle(t.title);
+    setText(t.content);
+    textRef.current = t.content;
+    setIssues([]);
+    setTone(null);
+    setSaveStatus("unsaved");
+    setEditorSessionKey((k) => k + 1);
+    void runGrammarCheck({ silent: false, mode: t.mode });
+    showToast(`Template loaded: ${t.title}`, "success");
+  };
+
+  const handleOpenHistory = (entry: HistoryEntry) => {
+    setSidebarView("editor");
+    setWritingMode(entry.mode);
+    writingModeRef.current = entry.mode;
+    setDocTitle(entry.title);
+    setText(entry.content);
+    textRef.current = entry.content;
+    setIssues([]);
+    setTone(null);
+    setEditorSessionKey((k) => k + 1);
+    void runGrammarCheck({ silent: true, mode: entry.mode });
+  };
+
+  const handleDeleteHistory = (id: string) => {
+    deleteHistoryEntry(id);
+    setHistory(loadHistory());
+  };
+
+  const improvedText = aiPreview?.improved ?? "";
 
   return (
     <div className="app">
@@ -523,58 +648,79 @@ export default function App() {
       <Header
         theme={theme}
         onThemeToggle={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-        writingMode={writingMode}
-        onModeChange={handleModeChange}
         backendOnline={backendOnline}
-        onCheckGrammar={() => void runGrammarCheck()}
+        onCheckGrammar={() => void runGrammarCheck({ mode: writingModeRef.current })}
         onCorrectAll={handleCorrectAll}
         onSave={handleSave}
+        onClear={handleClearEditor}
+        onCopy={handleCopyText}
+        onDownload={handleDownloadText}
+        onToggleSidebar={() => setMobileSidebar((o) => !o)}
         checking={checking}
         correcting={correcting}
         saving={saving}
         canCorrectAll={visibleIssues.some((i) => i.suggestion || i.replacements[0])}
+        text={text}
+        overallScore={tone?.writing_scores?.overall}
+        modeLabel={MODE_INFO[writingMode].label}
+        lastEdited={lastEdited}
       />
 
       <div className="app-body">
-        <DocumentsSidebar
-          documents={documents}
-          activeId={docId}
-          onSelect={handleSelectDoc}
-          onNew={handleNewDoc}
-          onDelete={handleDeleteDoc}
+        <AppSidebar
+          view={sidebarView}
+          onViewChange={setSidebarView}
+          writingMode={writingMode}
+          onModeChange={handleModeChange}
+          history={history}
+          onOpenHistory={handleOpenHistory}
+          onDeleteHistory={handleDeleteHistory}
+          onSelectTemplate={handleSelectTemplate}
+          onNewDoc={handleNewDoc}
+          mobileOpen={mobileSidebar}
+          onCloseMobile={() => setMobileSidebar(false)}
         />
 
-        <main className="editor-main">
-          <input
-            className="doc-title-input"
-            value={docTitle}
-            onChange={(e) => setDocTitle(e.target.value)}
-            placeholder="Document title"
-          />
-          <WritingModeBar mode={writingMode} onLoadSample={applyModeSample} />
-          <div onMouseUp={trackSelection} onKeyUp={trackSelection} className="editor-wrap">
-            <WritingEditor
-              key={editorSessionKey}
-              ref={editorRef}
-              text={text}
-              onChange={handleTextChange}
-              saveStatus={saveStatus}
-              issues={issues}
-              visibleIssues={visibleIssues}
-              activeIssueId={activeIssueId}
-              hoveredIssueId={hoveredIssueId}
-              onIssueClick={handleSelectIssue}
-              onIssueHover={setHoveredIssueId}
-              onApplyFromEditor={(issue) =>
-                handleApplyIssue(issue, issue.suggestion || issue.replacements[0] || "")
-              }
-              selection={selection}
+        <div className="app-main-column">
+          <main className="editor-main">
+            <input
+              className="doc-title-input"
+              value={docTitle}
+              onChange={(e) => setDocTitle(e.target.value)}
+              placeholder="Document title"
             />
-          </div>
-        </main>
+            <WritingModeBar mode={writingMode} onLoadSample={applyModeSample} />
+            {!text.trim() ? (
+              <EmptyState
+                icon="✎"
+                title="Start writing"
+                message="Paste your text or choose a template from the sidebar to get AI suggestions."
+              />
+            ) : null}
+            <div onMouseUp={trackSelection} onKeyUp={trackSelection} className="editor-wrap">
+              <WritingEditor
+                key={editorSessionKey}
+                ref={editorRef}
+                text={text}
+                onChange={handleTextChange}
+                saveStatus={saveStatus}
+                issues={issues}
+                visibleIssues={visibleIssues}
+                activeIssueId={activeIssueId}
+                hoveredIssueId={hoveredIssueId}
+                onIssueClick={handleSelectIssue}
+                onIssueHover={setHoveredIssueId}
+                onApplyFromEditor={(issue) =>
+                  handleApplyIssue(issue, issue.suggestion || issue.replacements[0] || "")
+                }
+                selection={selection}
+              />
+            </div>
+          </main>
+        </div>
 
         <aside className="right-panel">
-          <TonePanel tone={tone} refreshing={toneRefreshing || autoChecking} />
+          <ScorePanel tone={tone} checking={checking || autoChecking} refreshing={toneRefreshing} />
           <section ref={rewritePanelRef}>
             <RewritePanel
               writingMode={writingMode}
@@ -591,18 +737,21 @@ export default function App() {
             issues={visibleIssues}
             activeIssueId={activeIssueId}
             checking={checking || autoChecking}
+            writingMode={writingMode}
             onSelect={handleSelectIssue}
             onApply={handleApplyIssue}
             onIgnore={handleIgnoreIssue}
             onAddToDictionary={handleAddToDictionary}
           />
-          <AiRewritePanel
-            preview={aiPreview}
-            loading={rewriteLoading}
-            onReplace={handleReplaceSelection}
-            onCopy={handleCopyRewrite}
-            onDismiss={() => setAiPreview(null)}
-          />
+          {aiPreview && (
+            <BeforeAfterPanel
+              original={aiPreview.original}
+              improved={improvedText}
+              onReplace={handleReplaceSelection}
+              onCopy={handleCopyRewrite}
+              onDismiss={() => setAiPreview(null)}
+            />
+          )}
         </aside>
       </div>
     </div>

@@ -73,7 +73,7 @@ SAMPLE_DOCS = [
     ("Medicare Clinic Brief", DEMO_SAMPLE_TEXT),
     (
         "Resume bullet draft",
-        "Worked on website project. Helped team with tasks. Used React sometimes. "
+        "Developed website project. Helped team with tasks. Used React sometimes. "
         "Responsible for fixing bugs and attending meetings.",
     ),
     (
@@ -123,22 +123,27 @@ async def get_document(doc_id: int) -> dict[str, Any] | None:
 
 
 async def save_document(title: str, content: str, doc_id: int | None = None) -> dict[str, Any]:
+    title = (title or "Untitled").strip() or "Untitled"
     async with aiosqlite.connect(_db_path) as db:
         db.row_factory = aiosqlite.Row
+        saved_id: int | None = None
         if doc_id:
-            await db.execute(
+            cursor = await db.execute(
                 "UPDATE documents SET title = ?, content = ?, updated_at = datetime('now') WHERE id = ?",
                 (title, content, doc_id),
             )
-        else:
+            if cursor.rowcount > 0:
+                saved_id = doc_id
+        if saved_id is None:
             cursor = await db.execute(
-                "INSERT INTO documents (title, content) VALUES (?, ?)",
+                "INSERT INTO documents (title, content, updated_at) VALUES (?, ?, datetime('now'))",
                 (title, content),
             )
-            doc_id = cursor.lastrowid
+            saved_id = int(cursor.lastrowid)
         await db.commit()
-    doc = await get_document(doc_id)
-    assert doc is not None
+    doc = await get_document(saved_id)
+    if doc is None:
+        raise RuntimeError("Document save failed")
     return doc
 
 

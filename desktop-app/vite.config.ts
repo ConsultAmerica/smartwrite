@@ -11,6 +11,11 @@ export default defineConfig({
     proxy: {
       "/health": { target: "http://127.0.0.1:8002", changeOrigin: true },
       "/check-grammar": { target: "http://127.0.0.1:8002", changeOrigin: true },
+      "/check-resume": { target: "http://127.0.0.1:8002", changeOrigin: true },
+      "/check-email": { target: "http://127.0.0.1:8002", changeOrigin: true },
+      "/check-healthcare": { target: "http://127.0.0.1:8002", changeOrigin: true },
+      "/check-academic": { target: "http://127.0.0.1:8002", changeOrigin: true },
+      "/check-business": { target: "http://127.0.0.1:8002", changeOrigin: true },
       "/check": { target: "http://127.0.0.1:8002", changeOrigin: true },
       "/detect-tone": { target: "http://127.0.0.1:8002", changeOrigin: true },
       "/rewrite": { target: "http://127.0.0.1:8002", changeOrigin: true },

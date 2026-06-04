@@ -26,8 +26,12 @@ HEALTHCARE_PHRASES: tuple[str, ...] = (
     "medical director",
     "care team",
     "clinical team",
+    "high-risk patients",
     "high-risk",
     "ehr",
+    "patient",
+    "clinical",
+    "chronic",
 )
 
 _EXTRA_WORDS = (

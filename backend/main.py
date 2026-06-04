@@ -27,7 +27,7 @@ from database import (
     log_suggestion,
     save_document,
 )
-from grammar import check_grammar
+from mode_check import check_by_mode
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "desktop-app" / "dist"
 
@@ -65,6 +65,7 @@ class TextRequest(BaseModel):
     text: str
     document_id: int | None = None
     user_dictionary: list[str] = Field(default_factory=list)
+    writing_mode: str | None = None
 
 
 class RewriteRequest(BaseModel):
@@ -125,14 +126,40 @@ async def health():
 
 @app.post("/check-grammar")
 async def api_check_grammar(req: TextRequest):
-    result = await check_grammar(req.text, req.user_dictionary)
+    mode = (req.writing_mode or "general").lower()
+    payload = await check_by_mode(req.text, mode, req.user_dictionary)
     await log_grammar_check(
         req.document_id,
-        {"issue_count": result.issue_count},
-        result.issue_count,
-        result.grammar_score,
+        {"issue_count": payload.get("issue_count", 0), "mode": mode},
+        payload.get("issue_count", 0),
+        payload.get("grammar_score", 100),
     )
-    return result.model_dump()
+    return payload
+
+
+@app.post("/check-resume")
+async def api_check_resume(req: TextRequest):
+    return await check_by_mode(req.text, "resume", req.user_dictionary)
+
+
+@app.post("/check-email")
+async def api_check_email(req: TextRequest):
+    return await check_by_mode(req.text, "email", req.user_dictionary)
+
+
+@app.post("/check-healthcare")
+async def api_check_healthcare(req: TextRequest):
+    return await check_by_mode(req.text, "healthcare", req.user_dictionary)
+
+
+@app.post("/check-academic")
+async def api_check_academic(req: TextRequest):
+    return await check_by_mode(req.text, "academic", req.user_dictionary)
+
+
+@app.post("/check-business")
+async def api_check_business(req: TextRequest):
+    return await check_by_mode(req.text, "business", req.user_dictionary)
 
 
 @app.post("/check")

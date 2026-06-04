@@ -7,7 +7,7 @@ export function useToast() {
 
   const showToast = useCallback((text: string, type: ToastMessage["type"] = "info") => {
     const id = ++idRef.current;
-    setMessages((prev) => [...prev, { id, text, type }]);
+    setMessages([{ id, text, type }]);
   }, []);
 
   const dismissToast = useCallback((id: number) => {

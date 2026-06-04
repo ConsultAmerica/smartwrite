@@ -12,26 +12,29 @@ interface Props {
   onHealthcareAction: (action: string, label: string) => void;
 }
 
-const GENERAL_ACTIONS: { mode: ToneMode; label: string }[] = [
-  { mode: "grammar", label: "Fix grammar" },
-  { mode: "clarity", label: "Clarity" },
-  { mode: "professional", label: "Tone" },
+const QUICK_REWRITES: { mode: ToneMode; label: string }[] = [
+  { mode: "professional", label: "Professional" },
   { mode: "shorter", label: "Shorter" },
-  { mode: "formal", label: "More professional" },
+  { mode: "clearer", label: "Clearer" },
+  { mode: "confident", label: "Confident" },
+  { mode: "friendly", label: "Friendly" },
+  { mode: "formal", label: "Formal" },
+  { mode: "clarity", label: "Simplify" },
+  { mode: "grammar", label: "Sentence flow" },
 ];
 
 const EMAIL_ACTIONS = [
   { action: "polite", label: "Polite email" },
   { action: "short", label: "Short email" },
   { action: "professional", label: "Professional email" },
-  { action: "followup", label: "Follow-up email" },
-  { action: "apology", label: "Apology email" },
+  { action: "followup", label: "Follow-up" },
+  { action: "apology", label: "Apology" },
 ];
 
 const RESUME_ACTIONS = [
   { action: "bullet", label: "Improve bullet" },
-  { action: "action_verbs", label: "Add action verbs" },
-  { action: "measurable", label: "Add measurable impact" },
+  { action: "action_verbs", label: "Action verbs" },
+  { action: "measurable", label: "Add metrics" },
   { action: "ats", label: "ATS keywords" },
   { action: "stronger", label: "Make stronger" },
 ];
@@ -41,7 +44,6 @@ const HEALTHCARE_ACTIONS = [
   { action: "patient_friendly", label: "Care-team clarity" },
   { action: "concise", label: "More concise" },
   { action: "compliance", label: "Compliance polish" },
-  { action: "care_plan", label: "Care plan note" },
 ];
 
 export default function RewritePanel({
@@ -58,49 +60,38 @@ export default function RewritePanel({
   const canRunAction = documentHasText && !loading;
 
   return (
-    <section className="rewrite-panel">
-      <h3>AI actions — {writingMode}</h3>
+    <section className="rewrite-panel panel-card">
+      <h3>Rewrite tools</h3>
       {!documentHasText && (
-        <p className="hint">Add text in the editor, or use Load sample above.</p>
-      )}
-      {documentHasText && !hasSelection && (
-        <p className="hint">Actions apply to the full document. Select text to limit scope.</p>
+        <p className="hint">Start writing or load a template to use rewrite tools.</p>
       )}
       {hasSelection && (
         <p className="hint selection-hint">Selection only ({selectedText.trim().length} chars)</p>
       )}
 
-      {writingMode === "general" && (
-        <div className="action-group">
-          <span className="group-label">General mode</span>
-          <div className="action-btns">
-            {GENERAL_ACTIONS.map((a) => (
-              <button
-                key={a.label}
-                type="button"
-                className="action-btn"
-                disabled={!canRunAction}
-                onClick={() => onRewrite(a.mode, a.label)}
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
+      <div className="action-group">
+        <span className="group-label">Quick rewrite</span>
+        <div className="action-btns">
+          {QUICK_REWRITES.map((a) => (
+            <button
+              key={a.label}
+              type="button"
+              className="action-btn"
+              disabled={!canRunAction}
+              onClick={() => onRewrite(a.mode, a.label)}
+            >
+              {a.label}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
       {writingMode === "email" && (
         <div className="action-group">
           <span className="group-label">Email mode</span>
           <div className="action-btns">
             {EMAIL_ACTIONS.map((a) => (
-              <button
-                key={a.action}
-                type="button"
-                className="action-btn"
-                disabled={!canRunAction}
-                onClick={() => onEmailAction(a.action, a.label)}
-              >
+              <button key={a.action} type="button" className="action-btn" disabled={!canRunAction} onClick={() => onEmailAction(a.action, a.label)}>
                 {a.label}
               </button>
             ))}
@@ -113,13 +104,7 @@ export default function RewritePanel({
           <span className="group-label">Resume mode</span>
           <div className="action-btns">
             {RESUME_ACTIONS.map((a) => (
-              <button
-                key={a.action}
-                type="button"
-                className="action-btn"
-                disabled={!canRunAction}
-                onClick={() => onResumeAction(a.action, a.label)}
-              >
+              <button key={a.action} type="button" className="action-btn" disabled={!canRunAction} onClick={() => onResumeAction(a.action, a.label)}>
                 {a.label}
               </button>
             ))}
@@ -132,17 +117,18 @@ export default function RewritePanel({
           <span className="group-label">Healthcare mode</span>
           <div className="action-btns">
             {HEALTHCARE_ACTIONS.map((a) => (
-              <button
-                key={a.action}
-                type="button"
-                className="action-btn"
-                disabled={!canRunAction}
-                onClick={() => onHealthcareAction(a.action, a.label)}
-              >
+              <button key={a.action} type="button" className="action-btn" disabled={!canRunAction} onClick={() => onHealthcareAction(a.action, a.label)}>
                 {a.label}
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {(writingMode === "academic" || writingMode === "business" || writingMode === "general") && (
+        <div className="action-group">
+          <span className="group-label">{writingMode} tips</span>
+          <p className="hint">Use Quick rewrite above, then review in Before & After.</p>
         </div>
       )}
     </section>

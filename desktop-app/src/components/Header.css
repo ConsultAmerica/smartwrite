@@ -1,63 +1,47 @@
 .app-header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 14px 20px;
+  gap: 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-panel);
+  box-shadow: var(--shadow-sm);
 }
 
-.header-brand {
+.header-stats {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 200px;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  flex: 1;
 }
 
-.logo {
-  font-size: 22px;
+.header-stats .dot {
+  opacity: 0.4;
+}
+
+.header-score {
+  font-weight: 700;
   color: var(--accent);
 }
 
-.header-brand h1 {
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.header-brand p {
-  font-size: 11px;
+.header-mode {
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-muted);
-}
-
-.mode-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--bg);
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-
-.mode-tabs button {
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-muted);
-  transition: all 0.15s;
-}
-
-.mode-tabs button.active {
-  background: var(--accent);
-  color: #fff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .header-actions {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .status-dot {
@@ -68,41 +52,24 @@
 
 .status-dot.online {
   background: var(--success);
-  box-shadow: 0 0 8px var(--success);
 }
 
 .status-dot.offline {
   background: var(--error);
 }
 
-.btn {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  transition: opacity 0.15s;
+.mobile-menu {
+  font-size: 20px;
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+@media (max-width: 900px) {
+  .hide-mobile {
+    display: none !important;
+  }
 }
 
-.btn.primary {
-  background: var(--accent);
-  color: #fff;
-}
-
-.btn.primary:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-
-.btn.secondary {
-  background: var(--bg);
-  border: 1px solid var(--border);
-}
-
-.btn.ghost {
-  padding: 8px 10px;
-  font-size: 16px;
+@media (min-width: 901px) {
+  .hide-desktop {
+    display: none !important;
+  }
 }

@@ -1,13 +1,16 @@
 export interface TextStats {
   words: number;
+  characters: number;
   sentences: number;
   readingMinutes: number;
   readingLabel: string;
+  readingTime: string;
 }
 
 export function getTextStats(text: string): TextStats {
   const trimmed = text.trim();
   const words = trimmed ? trimmed.split(/\s+/).filter(Boolean).length : 0;
+  const characters = text.length;
   const sentences = trimmed
     ? Math.max(1, trimmed.split(/[.!?]+/).filter((s) => s.trim().length > 0).length)
     : 0;
@@ -15,7 +18,14 @@ export function getTextStats(text: string): TextStats {
   const readingLabel =
     readingMinutes < 1 ? "<1 min" : `${Math.max(1, Math.round(readingMinutes))} min`;
 
-  return { words, sentences, readingMinutes, readingLabel };
+  return {
+    words,
+    characters,
+    sentences,
+    readingMinutes,
+    readingLabel,
+    readingTime: readingLabel,
+  };
 }
 
 export function formatRelativeTime(iso: string): string {

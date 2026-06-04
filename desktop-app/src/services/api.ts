@@ -1,9 +1,11 @@
-import type {
-  Document,
-  GrammarCheckResult,
-  ToneResult,
-  ToneMode,
-} from "../types";
+import type { Document, ToneResult, ToneMode, WritingMode } from "../types";
+import { analyzeAcademicLocally } from "./academicAnalysis";
+import { analyzeBusinessLocally } from "./businessAnalysis";
+import { analyzeEmailLocally } from "./emailAnalysis";
+import { mergeGeneralIssues } from "./generalAnalysis";
+import { analyzeHealthcareLocally, looksLikeHealthcareText } from "./healthcareAnalysis";
+import { analyzeResumeLocally, looksLikeWeakResumeBullet } from "./resumeAnalysis";
+import { modeResultToTone, type ModeCheckResult } from "./modeTone";
 import { normalizeClaritySuggestions, normalizeIssues } from "./normalize";
 
 function resolveApiBase(): string {
@@ -14,7 +16,6 @@ function resolveApiBase(): string {
   const electronUrl = (window as Window & { smartwrite?: { apiBaseUrl: string } }).smartwrite
     ?.apiBaseUrl;
   if (electronUrl) return electronUrl;
-  // Vite dev proxy: same origin; production bundle served from API on :8002
   if (import.meta.env.DEV) return "";
   if (window.location.port === "8002" || window.location.port === "") {
     return window.location.origin;
@@ -23,68 +24,192 @@ function resolveApiBase(): string {
 }
 
 const API_BASE = resolveApiBase();
+const DEV_BACKEND = "http://127.0.0.1:8002";
+
+async function request<T>(
+  path: string,
+  init: RequestInit & { method?: string }
+): Promise<T> {
+  const bases = API_BASE ? [API_BASE] : [""];
+  if (import.meta.env.DEV && !API_BASE) {
+    bases.push(DEV_BACKEND);
+  }
+
+  let lastError = "Request failed";
+  for (const base of bases) {
+    try {
+      const res = await fetch(`${base}${path}`, init);
+      if (!res.ok) {
+        lastError = (await res.text()) || `HTTP ${res.status}`;
+        continue;
+      }
+      return (await res.json()) as T;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+    }
+  }
+  throw new Error(lastError);
+}
 
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  return request<T>(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err || `Request failed: ${res.status}`);
-  }
-  return res.json() as Promise<T>;
 }
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`);
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-  return res.json() as Promise<T>;
+  return request<T>(path, { method: "GET" });
 }
 
-export async function checkGrammar(
-  text: string,
-  documentId?: number | null,
-  userDictionary?: string[]
-): Promise<GrammarCheckResult> {
-  const raw = await post<GrammarCheckResult & { issues?: unknown[] }>(
-    "/check-grammar",
-    {
-      text,
-      document_id: documentId ?? null,
-      user_dictionary: userDictionary ?? [],
-    }
-  );
+function normalizeDocument(raw: Record<string, unknown>, fallback: { title: string; content: string }): Document {
+  const id = Number(raw.id);
+  if (!Number.isFinite(id)) {
+    throw new Error("Save failed: server returned an invalid document id.");
+  }
+  return {
+    id,
+    title: String(raw.title ?? fallback.title),
+    content: String(raw.content ?? fallback.content),
+    created_at: String(raw.created_at ?? new Date().toISOString()),
+    updated_at: String(raw.updated_at ?? new Date().toISOString()),
+  };
+}
+
+function mapCheckResult(raw: ModeCheckResult, text: string): ModeCheckResult {
   return {
     ...raw,
     issues: normalizeIssues(raw.issues ?? [], text),
     clarity_score: Number(raw.clarity_score ?? 100),
     clarity_suggestions: normalizeClaritySuggestions(raw.clarity_suggestions ?? []),
+    issue_count: Number(raw.issue_count ?? (raw.issues as unknown[] | undefined)?.length ?? 0),
+    grammar_score: Number(raw.grammar_score ?? 100),
+    resume_strength_score: raw.resume_strength_score,
+    impact_score: raw.impact_score,
+    professionalism_score: raw.professionalism_score,
+    clinical_clarity_score: raw.clinical_clarity_score,
+    writing_mode: raw.writing_mode,
+    tone: raw.tone,
   };
 }
 
-export function buildWritingSummary(issueCount: number, grammarScore: number): string {
-  if (issueCount === 0) {
-    return "Writing looks clean — keep going!";
+function isUsableModeApiResult(raw: ModeCheckResult, mode: WritingMode, text: string): boolean {
+  if (raw.writing_mode === mode) return true;
+  if ((raw.issue_count ?? 0) > 0) {
+    if (mode === "resume") return looksLikeWeakResumeBullet(text) || raw.resume_strength_score != null;
+    if (mode === "healthcare") return looksLikeHealthcareText(text) || raw.clinical_clarity_score != null;
+    if (mode === "email") return raw.professionalism_score != null;
+    return true;
   }
-  return `${issueCount} issue${issueCount === 1 ? "" : "s"} to fix. Grammar score: ${grammarScore}%.`;
+  return false;
+}
+
+function analyzeLocally(mode: WritingMode, text: string): ModeCheckResult {
+  switch (mode) {
+    case "resume": {
+      const r = analyzeResumeLocally(text);
+      return { ...r, writing_mode: "resume", tone: "Resume-oriented" };
+    }
+    case "email": {
+      const r = analyzeEmailLocally(text);
+      return {
+        ...r,
+        writing_mode: "email",
+        tone: "Professional Email",
+        professionalism_score: r.professionalism_score,
+      };
+    }
+    case "healthcare": {
+      const r = analyzeHealthcareLocally(text);
+      return {
+        ...r,
+        writing_mode: "healthcare",
+        tone: "Professional Healthcare",
+        clinical_clarity_score: r.clinical_clarity_score,
+        professionalism_score: r.professionalism_score,
+      };
+    }
+    case "academic": {
+      const r = analyzeAcademicLocally(text);
+      return { ...r, writing_mode: "academic", tone: "Academic", professionalism_score: r.professionalism_score };
+    }
+    case "business": {
+      const r = analyzeBusinessLocally(text);
+      return { ...r, writing_mode: "business", tone: "Business Professional", professionalism_score: r.professionalism_score };
+    }
+    default:
+      return mergeGeneralIssues(
+        {
+          issues: [],
+          grammar_score: 100,
+          issue_count: 0,
+          clarity_score: 100,
+          clarity_suggestions: [],
+          writing_mode: "general",
+          tone: "Neutral",
+        } as ModeCheckResult,
+        text
+      );
+  }
+}
+
+async function fetchModeFromApi(
+  text: string,
+  mode: WritingMode,
+  documentId?: number | null,
+  userDictionary?: string[]
+): Promise<ModeCheckResult | null> {
+  const body = {
+    text,
+    document_id: documentId ?? null,
+    user_dictionary: userDictionary ?? [],
+    writing_mode: mode,
+  };
+  const paths: Record<WritingMode, string[]> = {
+    general: ["/check-grammar"],
+    resume: ["/check-resume", "/check-grammar"],
+    email: ["/check-email", "/check-grammar"],
+    healthcare: ["/check-healthcare", "/check-grammar"],
+    academic: ["/check-academic", "/check-grammar"],
+    business: ["/check-business", "/check-grammar"],
+  };
+
+  for (const path of paths[mode] ?? ["/check-grammar"]) {
+    try {
+      return await post<ModeCheckResult>(path, body);
+    } catch {
+      /* try next path or fallback */
+    }
+  }
+  return null;
+}
+
+export async function checkGrammar(
+  text: string,
+  documentId?: number | null,
+  userDictionary?: string[],
+  writingMode: WritingMode = "general"
+): Promise<ModeCheckResult> {
+  const raw = await fetchModeFromApi(text, writingMode, documentId, userDictionary);
+  if (writingMode === "general") {
+    if (raw) return mapCheckResult(mergeGeneralIssues(mapCheckResult(raw, text), text), text);
+    return mapCheckResult(analyzeLocally("general", text), text);
+  }
+  if (raw && isUsableModeApiResult(raw, writingMode, text)) {
+    return mapCheckResult(raw, text);
+  }
+  return mapCheckResult(analyzeLocally(writingMode, text), text);
 }
 
 export function grammarResultToTone(
-  result: GrammarCheckResult,
-  toneLabel = "Neutral",
-  visibleIssueCount?: number
+  result: ModeCheckResult,
+  _toneLabel = "Neutral",
+  visibleIssueCount?: number,
+  options?: { mode?: WritingMode; text?: string }
 ): ToneResult {
-  const count = visibleIssueCount ?? result.issue_count;
-  return {
-    tone: toneLabel,
-    clarity_score: result.clarity_score,
-    grammar_score: result.grammar_score,
-    suggestion_count: count,
-    clarity_suggestions: result.clarity_suggestions,
-    summary: buildWritingSummary(count, result.grammar_score),
-  };
+  const mode = options?.mode ?? (result.writing_mode as WritingMode) ?? "general";
+  return modeResultToTone(result, mode, visibleIssueCount, options?.text ?? "");
 }
 
 export async function detectTone(
@@ -96,11 +221,15 @@ export async function detectTone(
     user_dictionary: userDictionary ?? [],
   });
   const issueCount = Number(raw.suggestion_count ?? 0);
-  const grammarScore = Number(raw.grammar_score ?? 100);
+  const grammarScore = issueCount > 0 ? Math.min(Number(raw.grammar_score ?? 100), 99) : 100;
   return {
     ...raw,
+    grammar_score: grammarScore,
     clarity_suggestions: normalizeClaritySuggestions(raw.clarity_suggestions ?? []),
-    summary: buildWritingSummary(issueCount, grammarScore),
+    summary:
+      issueCount === 0
+        ? "Writing looks clean — keep going!"
+        : `${issueCount} issue${issueCount === 1 ? "" : "s"} to fix. Grammar score: ${grammarScore}%.`,
   };
 }
 
@@ -153,7 +282,15 @@ export async function saveDocument(
   content: string,
   id?: number | null
 ): Promise<Document> {
-  return post("/documents", { title, content, id: id ?? null });
+  const payload: { title: string; content: string; id?: number } = {
+    title: title.trim() || "Untitled Document",
+    content,
+  };
+  if (id != null && Number.isFinite(id)) {
+    payload.id = id;
+  }
+  const raw = await post<Record<string, unknown>>("/documents", payload);
+  return normalizeDocument(raw, payload);
 }
 
 export async function deleteDocument(id: number): Promise<void> {
@@ -163,9 +300,7 @@ export async function deleteDocument(id: number): Promise<void> {
 
 export async function healthCheck(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/health`);
-    if (!res.ok) return false;
-    const data = (await res.json()) as { api?: string };
+    const data = await get<{ api?: string }>("/health");
     return data.api === "backend-v1";
   } catch {
     return false;

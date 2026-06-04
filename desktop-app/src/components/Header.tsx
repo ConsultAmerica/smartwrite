@@ -1,74 +1,103 @@
-import type { Theme, WritingMode } from "../types";
+import type { Theme } from "../types";
+import { getTextStats, formatRelativeTime } from "../utils/textStats";
 import "./Header.css";
 
 interface Props {
   theme: Theme;
   onThemeToggle: () => void;
-  writingMode: WritingMode;
-  onModeChange: (mode: WritingMode) => void;
   backendOnline: boolean;
   onCheckGrammar: () => void;
   onCorrectAll: () => void;
   onSave: () => void;
+  onClear: () => void;
+  onCopy: () => void;
+  onDownload?: () => void;
+  onToggleSidebar?: () => void;
   checking: boolean;
   correcting: boolean;
   saving: boolean;
   canCorrectAll: boolean;
+  text: string;
+  overallScore?: number;
+  modeLabel: string;
+  lastEdited?: string | null;
 }
-
-const MODES: { id: WritingMode; label: string }[] = [
-  { id: "general", label: "General" },
-  { id: "email", label: "Email" },
-  { id: "resume", label: "Resume" },
-  { id: "healthcare", label: "Healthcare" },
-];
-
 export default function Header({
   theme,
   onThemeToggle,
-  writingMode,
-  onModeChange,
   backendOnline,
   onCheckGrammar,
   onCorrectAll,
   onSave,
+  onClear,
+  onCopy,
+  onDownload,
+  onToggleSidebar,
   checking,
   correcting,
   saving,
   canCorrectAll,
+  text,
+  overallScore,
+  modeLabel,
+  lastEdited,
 }: Props) {
+  const stats = getTextStats(text);
+
   return (
     <header className="app-header">
-      <div className="header-brand">
-        <span className="logo">✦</span>
-        <div>
-          <h1>SmartWrite AI</h1>
-          <p>Desktop Writing Assistant</p>
-        </div>
+      <button type="button" className="mobile-menu btn ghost hide-desktop" onClick={onToggleSidebar} aria-label="Menu">
+        ☰
+      </button>
+
+      <div className="header-stats hide-mobile">
+        <span>{stats.words} words</span>
+        <span className="dot">·</span>
+        <span>{stats.characters} chars</span>
+        <span className="dot">·</span>
+        <span>{stats.readingTime}</span>
+        {overallScore != null && (
+          <>
+            <span className="dot">·</span>
+            <span className="header-score">Score {overallScore}</span>
+          </>
+        )}
+        {lastEdited && (
+          <>
+            <span className="dot">·</span>
+            <span className="header-edited">{formatRelativeTime(lastEdited)}</span>
+          </>
+        )}
       </div>
 
-      <nav className="mode-tabs">
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            className={writingMode === m.id ? "active" : ""}
-            onClick={() => onModeChange(m.id)}
-          >
-            {m.label}
-          </button>
-        ))}
-      </nav>
+      <div className="header-mode hide-mobile">{modeLabel} mode</div>
 
       <div className="header-actions">
         <span
           className={`status-dot ${backendOnline ? "online" : "offline"}`}
-          title={backendOnline ? "API connected" : "API offline"}
+          title={backendOnline ? "API connected" : "API offline — local analysis available"}
         />
         <button type="button" className="btn ghost" onClick={onThemeToggle} title="Toggle theme">
           {theme === "dark" ? "☀" : "☾"}
         </button>
-        <button type="button" className="btn secondary" onClick={onSave} disabled={saving}>
+        <button type="button" className="btn ghost hide-mobile" onClick={onCopy} title="Copy text">
+          Copy
+        </button>
+        {onDownload && (
+          <button type="button" className="btn ghost hide-mobile" onClick={onDownload} title="Download as TXT">
+            Download
+          </button>
+        )}
+        <button type="button" className="btn ghost hide-mobile" onClick={onClear} title="Clear editor">
+          Clear
+        </button>
+        <button
+          type="button"
+          className="btn secondary"
+          onClick={onSave}
+          disabled={saving}
+          title="Save draft (Ctrl+S)"
+        >
           {saving ? "Saving…" : "Save"}
         </button>
         <button
@@ -77,15 +106,9 @@ export default function Header({
           onClick={onCorrectAll}
           disabled={correcting || !canCorrectAll}
         >
-          {correcting ? "Applying…" : "Correct All"}
+          {correcting ? "Applying…" : "Apply All"}
         </button>
-        <button
-          type="button"
-          className="btn primary"
-          onClick={onCheckGrammar}
-          disabled={checking}
-          title="Check grammar (Ctrl+Enter)"
-        >
+        <button type="button" className="btn primary" onClick={onCheckGrammar} disabled={checking} title="Ctrl+Enter">
           {checking ? "Checking…" : "Check Grammar"}
         </button>
       </div>
