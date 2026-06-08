@@ -55,8 +55,8 @@
 }
 
 .mode-pill.active {
-  background: var(--secondary);
-  border-color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-muted);
   color: var(--accent);
   font-weight: 600;
   box-shadow: var(--shadow-sm);

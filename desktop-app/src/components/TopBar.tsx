@@ -112,7 +112,7 @@ export default function TopBar({
               {onCopy && <button type="button" onClick={onCopy}>Copy text</button>}
               {onClear && <button type="button" onClick={onClear}>Clear editor</button>}
               <button type="button" onClick={onThemeToggle}>
-                {theme === "dark" ? "☀ Light mode" : "☾ Dark mode"}
+                {theme === "dark" ? "☀ Light mode" : "☾ Soft dark"}
               </button>
             </div>
           )}

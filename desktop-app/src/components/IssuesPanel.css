@@ -110,27 +110,27 @@
 
 .issue-type.grammar {
   color: var(--grammar);
-  background: rgba(251, 146, 60, 0.12);
+  background: var(--issue-grammar-bg);
 }
 
 .issue-type.word_choice {
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.12);
+  color: var(--warning);
+  background: var(--warning-bg);
 }
 
 .issue-type.punctuation {
   color: var(--text-muted);
-  background: rgba(148, 163, 184, 0.12);
+  background: var(--issue-style-bg);
 }
 
 .issue-type.style {
   color: var(--style);
-  background: rgba(167, 139, 250, 0.12);
+  background: var(--issue-tone-bg);
 }
 
 .issue-type.clarity {
   color: var(--clarity);
-  background: rgba(56, 189, 248, 0.12);
+  background: var(--issue-clarity-bg);
 }
 
 .issue-detail {
@@ -160,7 +160,7 @@
 .issue-row-value.original {
   color: var(--error);
   text-decoration: line-through;
-  text-decoration-color: rgba(248, 113, 113, 0.55);
+  text-decoration-color: var(--highlight-removed);
 }
 
 .issue-row-value.suggestion {
@@ -196,7 +196,7 @@
 
 .issue-btn.apply {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
@@ -212,7 +212,7 @@
 .issue-btn.dictionary {
   background: transparent;
   color: var(--accent);
-  border-color: rgba(59, 130, 246, 0.35);
+  border-color: var(--accent-muted);
 }
 
 .issue-btn:hover {

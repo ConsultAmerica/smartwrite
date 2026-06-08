@@ -31,6 +31,8 @@
 .insights-tabs button.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
 .tab-count {

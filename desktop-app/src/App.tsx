@@ -53,7 +53,7 @@ export default function App() {
 
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem("smartwrite-theme");
-    return (saved as Theme) || "light";
+    return saved === "dark" ? "dark" : "light";
   });
   const {
     value: text,

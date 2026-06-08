@@ -52,14 +52,14 @@
 }
 
 .diff-changed {
-  background: rgba(239, 68, 68, 0.18);
+  background: var(--highlight-removed);
   color: var(--text);
   border-radius: 3px;
   padding: 0 2px;
 }
 
 .ba-col.improved .diff-changed {
-  background: rgba(34, 197, 94, 0.22);
+  background: var(--highlight-added);
 }
 
 .ba-actions {

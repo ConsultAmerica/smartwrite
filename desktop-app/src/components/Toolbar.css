@@ -18,8 +18,8 @@
 }
 
 .toolbar-btn:hover:not(:disabled) {
-  background: var(--secondary);
-  border-color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-muted);
   color: var(--accent);
 }
 
