@@ -1,0 +1,40 @@
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+}
+
+.brand-logo-icon {
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+  border-radius: 10px;
+}
+
+.brand-logo-text {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  line-height: 1;
+}
+
+.brand-logo-text strong {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.brand-logo-text span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .brand-logo-text {
+    display: none;
+  }
+}

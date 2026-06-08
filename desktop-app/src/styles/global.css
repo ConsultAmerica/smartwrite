@@ -7,10 +7,16 @@
   --bg-sidebar: #eef2f6;
   --bg-editor: #fafbfc;
 
-  /* Text — readable, not harsh black */
-  --text: #2d3748;
-  --text-muted: #64748b;
-  --text-subtle: #94a3b8;
+  /* Foreground */
+  --text: #1a2b3c;
+  --text-muted: #4a5d73;
+  --text-subtle: #7b8fa3;
+  --fg-strong: #0f1c2e;
+  --fg-soft: #5c6f82;
+
+  /* Background image overlay */
+  --bg-image: url("/bg-pattern.svg");
+  --bg-overlay: rgba(233, 237, 242, 0.88);
 
   /* Brand — teal primary */
   --accent: #0d9488;
@@ -84,9 +90,13 @@
   --bg-sidebar: #243044;
   --bg-editor: #2a3749;
 
-  --text: #e2e8f0;
-  --text-muted: #94a3b8;
-  --text-subtle: #64748b;
+  --text: #e8eef5;
+  --text-muted: #a8b8cc;
+  --text-subtle: #7a8da3;
+  --fg-strong: #f4f7fb;
+  --fg-soft: #9aadc0;
+  --bg-image: url("/bg-pattern.svg");
+  --bg-overlay: rgba(30, 41, 59, 0.92);
 
   --accent: #2dd4bf;
   --accent-hover: #5eead4;
@@ -151,10 +161,28 @@ body,
 
 body {
   font-family: var(--font);
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 button {
@@ -231,7 +259,8 @@ select {
 }
 
 .panel-card {
-  background: var(--bg-panel);
+  background: color-mix(in srgb, var(--bg-panel) 93%, transparent);
+  backdrop-filter: blur(6px);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);

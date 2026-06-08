@@ -17,7 +17,8 @@
   width: 100%;
   max-width: 720px;
   font-family: var(--font);
-  background: var(--bg-editor);
+  background: color-mix(in srgb, var(--bg-editor) 94%, transparent);
+  backdrop-filter: blur(6px);
   border-color: var(--border);
   box-shadow: var(--shadow);
 }

@@ -4,7 +4,8 @@
   gap: 12px;
   min-height: 52px;
   padding: 0 16px;
-  background: var(--bg-elevated);
+  background: color-mix(in srgb, var(--bg-elevated) 90%, transparent);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -26,31 +27,6 @@
   display: flex;
   justify-content: center;
   min-width: 0;
-}
-
-.top-bar-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.top-bar-logo {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--accent-gradient);
-  color: var(--on-accent);
-  font-size: 14px;
-  box-shadow: var(--shadow-sm);
-}
-
-.top-bar-name {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
 }
 
 .top-bar-title {
@@ -174,10 +150,6 @@
 @media (max-width: 900px) {
   .top-bar-left {
     min-width: auto;
-  }
-
-  .top-bar-name {
-    display: none;
   }
 
   .top-bar-mode {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Theme, WritingMode } from "../types";
 import { MODE_INFO } from "../constants/modeConfig";
 import { getTextStats } from "../utils/textStats";
+import Logo from "./Logo";
 import "./TopBar.css";
 
 interface Props {
@@ -58,10 +59,7 @@ export default function TopBar({
         <button type="button" className="top-bar-menu hide-desktop" onClick={onToggleModePane} aria-label="Modes">
           ☰
         </button>
-        <div className="top-bar-brand">
-          <span className="top-bar-logo">✦</span>
-          <span className="top-bar-name">SmartWrite AI</span>
-        </div>
+        <Logo />
       </div>
 
       <div className="top-bar-center">
