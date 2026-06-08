@@ -1,0 +1,28 @@
+.editor-canvas {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 24px 24px;
+}
+
+.editor-canvas-inner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.editor-canvas-inner .writing-editor {
+  width: 100%;
+  max-width: 720px;
+  font-family: var(--font);
+  box-shadow: var(--shadow);
+}
+
+.editor-canvas-inner .editor-backdrop,
+.editor-canvas-inner .editor-textarea {
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+}

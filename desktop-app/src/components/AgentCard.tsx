@@ -5,6 +5,7 @@ import "./AgentCard.css";
 export interface AgentCardProps {
   title: string;
   description: string;
+  runLabel?: string;
   onRun: () => void;
   loading: boolean;
   result?: AgentResponse | null;
@@ -41,6 +42,7 @@ function formatResult(result: AgentResponse): string {
 export default function AgentCard({
   title,
   description,
+  runLabel = "Run",
   onRun,
   loading,
   result,
@@ -57,8 +59,8 @@ export default function AgentCard({
           <h4>{title}</h4>
           <p>{description}</p>
         </div>
-        <button type="button" className="btn secondary" onClick={onRun} disabled={loading}>
-          {loading ? "Running…" : "Run"}
+        <button type="button" className="btn primary agent-run" onClick={onRun} disabled={loading}>
+          {loading ? "Running…" : runLabel}
         </button>
       </div>
 

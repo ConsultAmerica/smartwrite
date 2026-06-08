@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import SuggestionPopover from "../components/SuggestionPopover";
 import type { GrammarIssue, SaveStatus } from "../types";
 import { getTextStats } from "../utils/textStats";
 import "./WritingEditor.css";
@@ -26,6 +27,8 @@ interface Props {
   onIssueClick: (issue: GrammarIssue) => void;
   onIssueHover: (issueId: string | null) => void;
   onApplyFromEditor: (issue: GrammarIssue) => void;
+  onIgnoreFromEditor?: (issue: GrammarIssue) => void;
+  onAskAgentFromEditor?: (issue: GrammarIssue) => void;
   selection: { start: number; end: number };
   saveStatus: SaveStatus;
 }
@@ -41,13 +44,20 @@ function escapeHtml(s: string): string {
 function issueColor(type: string): string {
   switch (type) {
     case "spelling":
-      return "var(--spell)";
-    case "style":
-      return "var(--style)";
+    case "grammar":
+    case "punctuation":
+      return "var(--highlight-grammar)";
     case "clarity":
-      return "var(--clarity)";
+    case "vague_wording":
+      return "var(--highlight-clarity)";
+    case "tone_issue":
+    case "casual_wording":
+    case "informal":
+      return "var(--highlight-tone)";
+    case "style":
+      return "var(--highlight-tone)";
     default:
-      return "var(--grammar)";
+      return "var(--highlight-grammar)";
   }
 }
 
@@ -93,6 +103,8 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
     onIssueClick,
     onIssueHover,
     onApplyFromEditor,
+    onIgnoreFromEditor,
+    onAskAgentFromEditor,
     selection,
     saveStatus,
   },
@@ -202,33 +214,31 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
       />
 
       {popup && (
-        <div
-          className="issue-popup"
-          style={{ top: popup.top, left: popup.left }}
-          onMouseLeave={() => {
+        <SuggestionPopover
+          issue={popup.issue}
+          top={popup.top}
+          left={popup.left}
+          onAccept={() => {
+            onApplyFromEditor(popup.issue);
+            setPopup(null);
+          }}
+          onIgnore={() => {
+            onIgnoreFromEditor?.(popup.issue);
+            setPopup(null);
+          }}
+          onAskAgent={
+            onAskAgentFromEditor
+              ? () => {
+                  onAskAgentFromEditor(popup.issue);
+                  setPopup(null);
+                }
+              : undefined
+          }
+          onClose={() => {
             setPopup(null);
             onIssueHover(null);
           }}
-        >
-          <span className="popup-label">Suggestion</span>
-          <strong>
-            {popup.issue.problem}
-            <span className="arrow"> → </span>
-            {popup.issue.suggestion || popup.issue.replacements[0]}
-          </strong>
-          {popup.issue.suggestion && (
-            <button
-              type="button"
-              className="popup-apply"
-              onClick={() => {
-                onApplyFromEditor(popup.issue);
-                setPopup(null);
-              }}
-            >
-              Apply
-            </button>
-          )}
-        </div>
+        />
       )}
 
       <footer className="editor-footer">

@@ -1,23 +1,21 @@
 import { useEffect, useState } from "react";
 import AgentCard from "./AgentCard";
 import BeforeAfterPanel from "./BeforeAfterPanel";
-import IssuesPanel from "./IssuesPanel";
-import RewritePanel from "./RewritePanel";
-import ScorePanel from "./ScorePanel";
+import HistoryPanel from "./HistoryPanel";
+import IssueList from "./IssueList";
+import ScoreCard from "./ScoreCard";
 import { AGENT_DEFINITIONS, TONE_AGENT_OPTIONS } from "../constants/agents";
-import { MODE_INFO } from "../constants/modeConfig";
 import { useAgent } from "../hooks/useAgent";
 import type {
   AiRewritePreview,
   GrammarIssue,
   HistoryEntry,
-  ToneMode,
   ToneResult,
   WritingMode,
 } from "../types";
 import "./InsightsPanel.css";
 
-type InsightsTab = "suggestions" | "agents" | "history";
+type InsightsTab = "issues" | "agents" | "history";
 
 interface Props {
   tone: ToneResult | null;
@@ -41,13 +39,16 @@ interface Props {
   history: HistoryEntry[];
   onOpenHistory: (entry: HistoryEntry) => void;
   onDeleteHistory: (id: string) => void;
-  rewriteLoading: boolean;
-  onRewrite: (mode: ToneMode, label: string) => void;
-  onEmailAction: (action: string, label: string) => void;
-  onResumeAction: (action: string, label: string) => void;
-  onHealthcareAction: (action: string, label: string) => void;
-  rewritePanelRef?: React.RefObject<HTMLElement | null>;
+  focusAgentsTab?: boolean;
+  onAgentsTabFocused?: () => void;
 }
+
+const AGENT_CTA: Record<string, string> = {
+  clarity: "Improve Clarity",
+  tone: "Adjust Tone",
+  grader: "Grade Writing",
+  humanizer: "Humanize Text",
+};
 
 function AgentSection({
   text,
@@ -66,7 +67,6 @@ function AgentSection({
   const grader = useAgent("grader");
   const humanizer = useAgent("humanizer");
   const [toneChoice, setToneChoice] = useState<string>("Professional");
-
   const hooks = { clarity, tone, grader, humanizer };
 
   return (
@@ -78,6 +78,7 @@ function AgentSection({
             key={def.id}
             title={def.title}
             description={def.description}
+            runLabel={AGENT_CTA[def.id]}
             loading={hook.loading}
             result={hook.result}
             error={hook.error}
@@ -129,28 +130,31 @@ export default function InsightsPanel({
   history,
   onOpenHistory,
   onDeleteHistory,
-  rewriteLoading,
-  onRewrite,
-  onEmailAction,
-  onResumeAction,
-  onHealthcareAction,
-  rewritePanelRef,
+  focusAgentsTab,
+  onAgentsTabFocused,
 }: Props) {
-  const [tab, setTab] = useState<InsightsTab>("suggestions");
+  const [tab, setTab] = useState<InsightsTab>("issues");
   const scanning = checking || toneRefreshing;
 
   useEffect(() => {
-    if (aiPreview) setTab("suggestions");
+    if (aiPreview) setTab("issues");
   }, [aiPreview]);
 
+  useEffect(() => {
+    if (focusAgentsTab) {
+      setTab("agents");
+      onAgentsTabFocused?.();
+    }
+  }, [focusAgentsTab, onAgentsTabFocused]);
+
   return (
-    <aside className="insights-panel right-panel">
-      <ScorePanel tone={tone} checking={checking} refreshing={toneRefreshing} />
+    <aside className="insights-panel">
+      <ScoreCard tone={tone} checking={scanning} />
 
       <nav className="insights-tabs" aria-label="Insights sections">
         {(
           [
-            ["suggestions", "Suggestions"],
+            ["issues", "Issues"],
             ["agents", "AI Agents"],
             ["history", "History"],
           ] as const
@@ -162,84 +166,54 @@ export default function InsightsPanel({
             onClick={() => setTab(id)}
           >
             {label}
-            {id === "suggestions" && issues.length > 0 && (
-              <span className="tab-count">{issues.length}</span>
-            )}
+            {id === "issues" && issues.length > 0 && <span className="tab-count">{issues.length}</span>}
           </button>
         ))}
       </nav>
 
-      {tab === "suggestions" && (
-        <>
-          <IssuesPanel
-            issues={issues}
-            activeIssueId={activeIssueId}
-            checking={scanning}
-            writingMode={writingMode}
-            onSelect={onSelectIssue}
-            onApply={onApplyIssue}
-            onIgnore={onIgnoreIssue}
-            onAddToDictionary={onAddToDictionary}
-          />
-          {aiPreview && (
-            <BeforeAfterPanel
-              original={aiPreview.original}
-              improved={aiPreview.improved}
-              onReplace={onReplacePreview}
-              onCopy={onCopyPreview}
-              onDismiss={onDismissPreview}
+      <div className="insights-body">
+        {tab === "issues" && (
+          <>
+            <IssueList
+              issues={issues}
+              activeIssueId={activeIssueId}
+              checking={scanning}
+              writingMode={writingMode}
+              onSelect={onSelectIssue}
+              onApply={onApplyIssue}
+              onIgnore={onIgnoreIssue}
+              onAddToDictionary={onAddToDictionary}
             />
-          )}
-        </>
-      )}
+            {aiPreview && (
+              <BeforeAfterPanel
+                original={aiPreview.original}
+                improved={aiPreview.improved}
+                onReplace={onReplacePreview}
+                onCopy={onCopyPreview}
+                onDismiss={onDismissPreview}
+              />
+            )}
+          </>
+        )}
 
-      {tab === "agents" && (
-        <div className="insights-scroll" ref={rewritePanelRef as React.RefObject<HTMLDivElement>}>
-          <RewritePanel
-            writingMode={writingMode}
-            selectedText={selectedText}
-            documentHasText={text.trim().length > 0}
-            loading={rewriteLoading}
-            onRewrite={onRewrite}
-            onEmailAction={onEmailAction}
-            onResumeAction={onResumeAction}
-            onHealthcareAction={onHealthcareAction}
-          />
+        {tab === "agents" && (
           <AgentSection
             text={text}
             selectedText={selectedText}
             documentId={documentId}
             onAgentApply={onAgentApply}
           />
-        </div>
-      )}
+        )}
 
-      {tab === "history" && (
-        <div className="insights-history insights-scroll">
-          {history.length === 0 && (
-            <p className="insights-empty">No saved drafts yet. Click Save to add history.</p>
-          )}
-          {history.map((h) => (
-            <div key={h.id} className="insights-history-item">
-              <button type="button" onClick={() => onOpenHistory(h)}>
-                <strong>{h.title}</strong>
-                <span>
-                  {MODE_INFO[h.mode].label} · Score {h.score}
-                </span>
-                <span className="history-preview">{h.preview}…</span>
-              </button>
-              <button
-                type="button"
-                className="history-del"
-                onClick={() => onDeleteHistory(h.id)}
-                aria-label="Delete"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+        {tab === "history" && (
+          <HistoryPanel
+            history={history}
+            onOpen={onOpenHistory}
+            onDelete={onDeleteHistory}
+            onRestore={onOpenHistory}
+          />
+        )}
+      </div>
     </aside>
   );
 }

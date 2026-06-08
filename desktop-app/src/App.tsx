@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import AppSidebar from "./components/AppSidebar";
 import InsightsPanel from "./components/InsightsPanel";
+import ModeSelector from "./components/ModeSelector";
+import TopBar from "./components/TopBar";
 import EmptyState from "./components/EmptyState";
-import Header from "./components/Header";
 import Toast from "./components/Toast";
-import WritingModeBar from "./components/WritingModeBar";
 import Editor, { type EditorHandle } from "./components/Editor";
 import { useToast } from "./hooks/useToast";
+import { useUndoRedo } from "./hooks/useUndoRedo";
 import * as api from "./services/api";
 import {
   addToUserDictionary,
@@ -19,22 +19,15 @@ import type {
   GrammarIssue,
   HistoryEntry,
   SaveStatus,
-  SidebarView,
   Theme,
   ToneMode,
   ToneResult,
   WritingMode,
 } from "./types";
 import { MODE_INFO } from "./constants/modeConfig";
-import { getTemplate } from "./constants/templates";
 import { buildModeSummary } from "./services/modeTone";
 import { saveLocalDraft } from "./services/draftStorage";
-import {
-  deleteHistoryEntry,
-  downloadTextFile,
-  loadHistory,
-  saveHistoryEntry,
-} from "./services/scoring";
+import { deleteHistoryEntry, loadHistory, saveHistoryEntry } from "./services/scoring";
 import "./App.css";
 
 function applyReplacement(text: string, issue: GrammarIssue, replacement: string): string {
@@ -62,11 +55,26 @@ export default function App() {
     const saved = localStorage.getItem("smartwrite-theme");
     return (saved as Theme) || "light";
   });
-  const [text, setText] = useState(INITIAL_TEXT);
+  const {
+    value: text,
+    setValue: pushText,
+    undo,
+    redo,
+    reset: resetText,
+    canUndo,
+    canRedo,
+  } = useUndoRedo(INITIAL_TEXT);
+  const setText = useCallback(
+    (next: string) => {
+      pushText(next);
+      textRef.current = next;
+    },
+    [pushText]
+  );
   const [writingMode, setWritingMode] = useState<WritingMode>("general");
   writingModeRef.current = writingMode;
-  const [sidebarView, setSidebarView] = useState<SidebarView>("editor");
-  const [mobileSidebar, setMobileSidebar] = useState(false);
+  const [mobileModePane, setMobileModePane] = useState(false);
+  const [focusAgentsTab, setFocusAgentsTab] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [issues, setIssues] = useState<GrammarIssue[]>([]);
   const [ignoredIds, setIgnoredIds] = useState<Set<string>>(new Set());
@@ -76,7 +84,6 @@ export default function App() {
   const [checking, setChecking] = useState(false);
   const [autoChecking, setAutoChecking] = useState(false);
   const [toneRefreshing, setToneRefreshing] = useState(false);
-  const [correcting, setCorrecting] = useState(false);
   const [rewriteLoading, setRewriteLoading] = useState(false);
   const [aiPreview, setAiPreview] = useState<AiRewritePreview | null>(null);
   const [backendOnline, setBackendOnline] = useState(false);
@@ -87,9 +94,7 @@ export default function App() {
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [userDictionary, setUserDictionary] = useState<string[]>(() => loadUserDictionary());
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const rewritePanelRef = useRef<HTMLElement>(null);
   const [editorSessionKey, setEditorSessionKey] = useState(0);
-  const [lastEdited, setLastEdited] = useState<string | null>(() => new Date().toISOString());
   const { messages: toasts, showToast, dismissToast } = useToast();
 
   textRef.current = text;
@@ -315,7 +320,6 @@ export default function App() {
 
   const handleCorrectAll = async () => {
     if (!visibleIssues.length) return;
-    setCorrecting(true);
     try {
       const result = await api.checkGrammar(text, docId, userDictionary);
       if (result.corrected_text) {
@@ -337,8 +341,8 @@ export default function App() {
         showToast("All fixes applied", "success");
         await runGrammarCheck();
       }
-    } finally {
-      setCorrecting(false);
+    } catch {
+      showToast("Could not apply all fixes.", "error");
     }
   };
 
@@ -352,56 +356,6 @@ export default function App() {
       showToast(`${label} ready — review below`, "success");
     } catch {
       showToast("Rewrite failed — is the backend running?", "error");
-    } finally {
-      setRewriteLoading(false);
-    }
-  };
-
-  const handleEmailAction = async (action: string, label: string) => {
-    const target = selectedText || text;
-    if (!target.trim()) return;
-    setRewriteLoading(true);
-    try {
-      const out = await api.improveEmail(target, action, docId);
-      setAiPreview({ original: target, improved: out.rewritten_text, label });
-      showToast(`${label} ready — review below`, "success");
-    } catch {
-      showToast("Email rewrite failed.", "error");
-    } finally {
-      setRewriteLoading(false);
-    }
-  };
-
-  const handleResumeAction = async (action: string, label: string) => {
-    const target = selectedText || text;
-    if (!target.trim()) return;
-    setRewriteLoading(true);
-    try {
-      const out = await api.improveResume(target, action, docId);
-      setAiPreview({
-        original: target,
-        improved: out.rewritten_text,
-        label,
-        action,
-        kind: "resume",
-      });
-    } catch {
-      showToast("Resume rewrite failed.", "error");
-    } finally {
-      setRewriteLoading(false);
-    }
-  };
-
-  const handleHealthcareAction = async (action: string, label: string) => {
-    const target = selectedText || text;
-    if (!target.trim()) return;
-    setRewriteLoading(true);
-    try {
-      const out = await api.improveHealthcare(target, action, docId);
-      setAiPreview({ original: target, improved: out.rewritten_text, label });
-      showToast(`${label} ready — review below`, "success");
-    } catch {
-      showToast("Healthcare rewrite failed.", "error");
     } finally {
       setRewriteLoading(false);
     }
@@ -425,6 +379,11 @@ export default function App() {
   const handleAgentApply = (original: string, rewrite: string, label: string) => {
     setAiPreview({ original, improved: rewrite, label, kind: "rewrite" });
     showToast(`${label} ready — review in Before & After`, "success");
+  };
+
+  const handleAskAgentFromEditor = () => {
+    setFocusAgentsTab(true);
+    showToast("Open AI Agents tab to run Clarity Agent.", "info");
   };
 
   const handleSave = useCallback(async () => {
@@ -499,15 +458,22 @@ export default function App() {
         e.preventDefault();
         void handleSave();
       }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [runGrammarCheck, handleSave]);
+  }, [runGrammarCheck, handleSave, undo, redo]);
 
   const handleTextChange = (value: string) => {
     setText(value);
     setSaveStatus("unsaved");
-    setLastEdited(new Date().toISOString());
   };
 
   const handleNewDoc = () => {
@@ -515,8 +481,8 @@ export default function App() {
     setDocId(null);
     setDocTitle("Untitled Document");
     setSaveStatus("unsaved");
+    resetText("");
     textRef.current = "";
-    setText("");
     setIssues([]);
     setIgnoredIds(new Set());
     setTone(null);
@@ -552,7 +518,8 @@ export default function App() {
         setActiveIssueId(null);
         setAiPreview(null);
         setTone(null);
-        setText(sample);
+        resetText(sample);
+        textRef.current = sample;
         setEditorSessionKey((k) => k + 1);
       });
 
@@ -561,14 +528,11 @@ export default function App() {
       }
       void runGrammarCheck({ silent: false, mode });
     },
-    [runGrammarCheck, showToast]
+    [runGrammarCheck, showToast, resetText]
   );
 
   const handleModeChange = (mode: WritingMode) => {
     applyModeSample(mode, { silent: false });
-    requestAnimationFrame(() => {
-      rewritePanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
   };
 
   const handleClearEditor = () => {
@@ -591,38 +555,11 @@ export default function App() {
     showToast("Copied to clipboard.", "success");
   };
 
-  const handleDownloadText = () => {
-    if (!text.trim()) {
-      showToast("Nothing to download — add some text first.", "info");
-      return;
-    }
-    const safeName = (docTitle.trim() || "smartwrite-draft").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
-    downloadTextFile(`${safeName}.txt`, text);
-    showToast("Download started.", "success");
-  };
-
-  const handleSelectTemplate = (templateId: string) => {
-    const t = getTemplate(templateId);
-    if (!t) return;
-    setWritingMode(t.mode);
-    writingModeRef.current = t.mode;
-    setDocTitle(t.title);
-    setText(t.content);
-    textRef.current = t.content;
-    setIssues([]);
-    setTone(null);
-    setSaveStatus("unsaved");
-    setEditorSessionKey((k) => k + 1);
-    void runGrammarCheck({ silent: false, mode: t.mode });
-    showToast(`Template loaded: ${t.title}`, "success");
-  };
-
   const handleOpenHistory = (entry: HistoryEntry) => {
-    setSidebarView("editor");
     setWritingMode(entry.mode);
     writingModeRef.current = entry.mode;
     setDocTitle(entry.title);
-    setText(entry.content);
+    resetText(entry.content);
     textRef.current = entry.content;
     setIssues([]);
     setTone(null);
@@ -638,56 +575,44 @@ export default function App() {
   return (
     <div className="app">
       <Toast messages={toasts} onDismiss={dismissToast} />
-      <Header
+      <TopBar
+        docTitle={docTitle}
+        onDocTitleChange={setDocTitle}
+        text={text}
+        writingMode={writingMode}
         theme={theme}
         onThemeToggle={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-        backendOnline={backendOnline}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onCheckGrammar={() => void runGrammarCheck({ mode: writingModeRef.current })}
-        onCorrectAll={handleCorrectAll}
         onSave={handleSave}
+        onApplyAll={() => void handleCorrectAll()}
+        onNewDoc={handleNewDoc}
         onClear={handleClearEditor}
-        onCopy={handleCopyText}
-        onDownload={handleDownloadText}
-        onToggleSidebar={() => setMobileSidebar((o) => !o)}
+        onCopy={() => void handleCopyText()}
+        canApplyAll={visibleIssues.some((i) => i.suggestion || i.replacements[0])}
         checking={checking}
-        correcting={correcting}
         saving={saving}
-        canCorrectAll={visibleIssues.some((i) => i.suggestion || i.replacements[0])}
-        text={text}
-        overallScore={tone?.writing_scores?.overall}
-        modeLabel={MODE_INFO[writingMode].label}
-        lastEdited={lastEdited}
+        onToggleModePane={() => setMobileModePane((o) => !o)}
       />
 
       <div className="app-body">
-        <AppSidebar
-          view={sidebarView}
-          onViewChange={setSidebarView}
-          writingMode={writingMode}
-          onModeChange={handleModeChange}
-          history={history}
-          onOpenHistory={handleOpenHistory}
-          onDeleteHistory={handleDeleteHistory}
-          onSelectTemplate={handleSelectTemplate}
-          onNewDoc={handleNewDoc}
-          mobileOpen={mobileSidebar}
-          onCloseMobile={() => setMobileSidebar(false)}
+        <ModeSelector
+          mode={writingMode}
+          onChange={handleModeChange}
+          mobileOpen={mobileModePane}
+          onCloseMobile={() => setMobileModePane(false)}
         />
 
-        <div className="app-main-column">
+        <div className="app-center">
           <main className="editor-main">
-            <input
-              className="doc-title-input"
-              value={docTitle}
-              onChange={(e) => setDocTitle(e.target.value)}
-              placeholder="Document title"
-            />
-            <WritingModeBar mode={writingMode} onLoadSample={applyModeSample} />
             {!text.trim() ? (
               <EmptyState
                 icon="✎"
                 title="Start writing"
-                message="Paste your text or choose a template from the sidebar to get AI suggestions."
+                message="Paste your text or switch modes to load a sample and get suggestions."
               />
             ) : null}
             <div onMouseUp={trackSelection} onKeyUp={trackSelection} className="editor-wrap">
@@ -706,8 +631,12 @@ export default function App() {
                 onApplyFromEditor={(issue) =>
                   handleApplyIssue(issue, issue.suggestion || issue.replacements[0] || "")
                 }
+                onIgnoreFromEditor={handleIgnoreIssue}
+                onAskAgentFromEditor={handleAskAgentFromEditor}
                 selection={selection}
-                onAnalyze={() => void runGrammarCheck({ mode: writingModeRef.current })}
+                toolbarLoading={rewriteLoading}
+                onToolbarPreset={handleRewrite}
+                documentHasText={text.trim().length > 0}
               />
             </div>
           </main>
@@ -735,12 +664,8 @@ export default function App() {
           history={history}
           onOpenHistory={handleOpenHistory}
           onDeleteHistory={handleDeleteHistory}
-          rewriteLoading={rewriteLoading}
-          onRewrite={handleRewrite}
-          onEmailAction={handleEmailAction}
-          onResumeAction={handleResumeAction}
-          onHealthcareAction={handleHealthcareAction}
-          rewritePanelRef={rewritePanelRef}
+          focusAgentsTab={focusAgentsTab}
+          onAgentsTabFocused={() => setFocusAgentsTab(false)}
         />
       </div>
     </div>
