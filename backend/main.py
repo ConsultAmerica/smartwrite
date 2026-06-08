@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from agents import run_agent
 from ai_rewrite import (
     detect_tone,
     improve_email,
@@ -89,6 +90,13 @@ class ResumeRequest(BaseModel):
 class HealthcareRequest(BaseModel):
     text: str
     action: str = "clinical_tone"
+    document_id: int | None = None
+
+
+class AgentRequest(BaseModel):
+    text: str
+    agent: str = "clarity"
+    options: dict = Field(default_factory=dict)
     document_id: int | None = None
 
 
@@ -208,6 +216,20 @@ async def api_improve_healthcare(req: HealthcareRequest):
     await log_suggestion(
         req.document_id, req.text, out["rewritten_text"], f"healthcare:{req.action}"
     )
+    return out
+
+
+@app.post("/agent")
+async def api_run_agent(req: AgentRequest):
+    if not req.text.strip():
+        raise HTTPException(400, "Text is required")
+    try:
+        out = await run_agent(req.agent, req.text, req.options)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    rewrite = out.get("result", {}).get("rewrite")
+    if rewrite:
+        await log_suggestion(req.document_id, req.text, rewrite, f"agent:{req.agent}")
     return out
 
 

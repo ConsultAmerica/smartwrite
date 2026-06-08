@@ -22,6 +22,7 @@ export default defineConfig({
       "/improve-email": { target: "http://127.0.0.1:8002", changeOrigin: true },
       "/improve-resume-bullet": { target: "http://127.0.0.1:8002", changeOrigin: true },
       "/improve-healthcare": { target: "http://127.0.0.1:8002", changeOrigin: true },
+      "/agent": { target: "http://127.0.0.1:8002", changeOrigin: true },
       "/documents": { target: "http://127.0.0.1:8002", changeOrigin: true },
       "/history": { target: "http://127.0.0.1:8002", changeOrigin: true },
     },

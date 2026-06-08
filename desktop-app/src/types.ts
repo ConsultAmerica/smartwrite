@@ -127,3 +127,33 @@ export interface AiRewritePreview {
 
 export type Theme = "dark" | "light";
 export type SaveStatus = "saved" | "unsaved" | "saving";
+
+export type AgentType = "clarity" | "tone" | "grader" | "humanizer";
+
+export interface AgentResponse {
+  agent: AgentType;
+  result: AgentResultPayload;
+  source: "openai" | "ollama" | "fallback" | string;
+}
+
+export interface AgentResultPayload {
+  rewrite?: string;
+  explanation?: string[];
+  tone?: string;
+  notes?: string[];
+  score?: number;
+  rubric?: {
+    clarity?: string;
+    structure?: string;
+    grammar?: string;
+    style?: string;
+  };
+  suggestions?: string[];
+  changes?: string[];
+}
+
+export interface AgentDefinition {
+  id: AgentType;
+  title: string;
+  description: string;
+}

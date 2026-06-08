@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import AppSidebar from "./components/AppSidebar";
-import ScorePanel from "./components/ScorePanel";
-import BeforeAfterPanel from "./components/BeforeAfterPanel";
+import InsightsPanel from "./components/InsightsPanel";
 import EmptyState from "./components/EmptyState";
 import Header from "./components/Header";
-import IssuesPanel from "./components/IssuesPanel";
-import RewritePanel from "./components/RewritePanel";
-import BackendBanner from "./components/BackendBanner";
 import Toast from "./components/Toast";
 import WritingModeBar from "./components/WritingModeBar";
-import WritingEditor, { type WritingEditorHandle } from "./editor/WritingEditor";
+import Editor, { type EditorHandle } from "./components/Editor";
 import { useToast } from "./hooks/useToast";
 import * as api from "./services/api";
 import {
@@ -55,7 +51,7 @@ function replaceSelection(text: string, start: number, end: number, replacement:
 const INITIAL_TEXT = MODE_INFO.general.sampleText;
 
 export default function App() {
-  const editorRef = useRef<WritingEditorHandle>(null);
+  const editorRef = useRef<EditorHandle>(null);
   const textRef = useRef(INITIAL_TEXT);
   const grammarRequestId = useRef(0);
   const toneRequestId = useRef(0);
@@ -95,11 +91,6 @@ export default function App() {
   const [editorSessionKey, setEditorSessionKey] = useState(0);
   const [lastEdited, setLastEdited] = useState<string | null>(() => new Date().toISOString());
   const { messages: toasts, showToast, dismissToast } = useToast();
-
-  const apiBaseUrl =
-    (typeof window !== "undefined" &&
-      (window as Window & { smartwrite?: { apiBaseUrl: string } }).smartwrite?.apiBaseUrl) ||
-    "http://127.0.0.1:8002";
 
   textRef.current = text;
 
@@ -431,6 +422,11 @@ export default function App() {
     if (aiPreview) await navigator.clipboard.writeText(aiPreview.improved);
   };
 
+  const handleAgentApply = (original: string, rewrite: string, label: string) => {
+    setAiPreview({ original, improved: rewrite, label, kind: "rewrite" });
+    showToast(`${label} ready — review in Before & After`, "success");
+  };
+
   const handleSave = useCallback(async () => {
     const title = docTitle.trim() || "Untitled Document";
     const content = textRef.current;
@@ -639,11 +635,8 @@ export default function App() {
     setHistory(loadHistory());
   };
 
-  const improvedText = aiPreview?.improved ?? "";
-
   return (
     <div className="app">
-      <BackendBanner online={backendOnline} apiUrl={apiBaseUrl} />
       <Toast messages={toasts} onDismiss={dismissToast} />
       <Header
         theme={theme}
@@ -698,7 +691,7 @@ export default function App() {
               />
             ) : null}
             <div onMouseUp={trackSelection} onKeyUp={trackSelection} className="editor-wrap">
-              <WritingEditor
+              <Editor
                 key={editorSessionKey}
                 ref={editorRef}
                 text={text}
@@ -714,45 +707,41 @@ export default function App() {
                   handleApplyIssue(issue, issue.suggestion || issue.replacements[0] || "")
                 }
                 selection={selection}
+                onAnalyze={() => void runGrammarCheck({ mode: writingModeRef.current })}
               />
             </div>
           </main>
         </div>
 
-        <aside className="right-panel">
-          <ScorePanel tone={tone} checking={checking || autoChecking} refreshing={toneRefreshing} />
-          <section ref={rewritePanelRef}>
-            <RewritePanel
-              writingMode={writingMode}
-              selectedText={selectedText}
-              documentHasText={text.trim().length > 0}
-              loading={rewriteLoading}
-              onRewrite={handleRewrite}
-              onEmailAction={handleEmailAction}
-              onResumeAction={handleResumeAction}
-              onHealthcareAction={handleHealthcareAction}
-            />
-          </section>
-          <IssuesPanel
-            issues={visibleIssues}
-            activeIssueId={activeIssueId}
-            checking={checking || autoChecking}
-            writingMode={writingMode}
-            onSelect={handleSelectIssue}
-            onApply={handleApplyIssue}
-            onIgnore={handleIgnoreIssue}
-            onAddToDictionary={handleAddToDictionary}
-          />
-          {aiPreview && (
-            <BeforeAfterPanel
-              original={aiPreview.original}
-              improved={improvedText}
-              onReplace={handleReplaceSelection}
-              onCopy={handleCopyRewrite}
-              onDismiss={() => setAiPreview(null)}
-            />
-          )}
-        </aside>
+        <InsightsPanel
+          tone={tone}
+          checking={checking}
+          toneRefreshing={toneRefreshing}
+          issues={visibleIssues}
+          activeIssueId={activeIssueId}
+          writingMode={writingMode}
+          onSelectIssue={handleSelectIssue}
+          onApplyIssue={handleApplyIssue}
+          onIgnoreIssue={handleIgnoreIssue}
+          onAddToDictionary={handleAddToDictionary}
+          text={text}
+          selectedText={selectedText}
+          documentId={docId}
+          onAgentApply={handleAgentApply}
+          aiPreview={aiPreview}
+          onReplacePreview={handleReplaceSelection}
+          onCopyPreview={handleCopyRewrite}
+          onDismissPreview={() => setAiPreview(null)}
+          history={history}
+          onOpenHistory={handleOpenHistory}
+          onDeleteHistory={handleDeleteHistory}
+          rewriteLoading={rewriteLoading}
+          onRewrite={handleRewrite}
+          onEmailAction={handleEmailAction}
+          onResumeAction={handleResumeAction}
+          onHealthcareAction={handleHealthcareAction}
+          rewritePanelRef={rewritePanelRef}
+        />
       </div>
     </div>
   );
