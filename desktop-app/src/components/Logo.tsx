@@ -5,33 +5,38 @@ interface Props {
   showWordmark?: boolean;
 }
 
-export default function Logo({ size = 32, showWordmark = true }: Props) {
+export default function Logo({ size = 36, showWordmark = true }: Props) {
   return (
     <div className="brand-logo" aria-label="SmartWrite AI">
       <svg
         className="brand-logo-icon"
         width={size}
         height={size}
-        viewBox="0 0 40 40"
+        viewBox="0 0 48 48"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
         <defs>
-          <linearGradient id="sw-logo-grad" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#0d9488" />
-            <stop offset="1" stopColor="#4f46e5" />
+          <linearGradient id="sw-bg" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#5eead4" />
+            <stop offset="0.45" stopColor="#2dd4bf" />
+            <stop offset="1" stopColor="#38bdf8" />
           </linearGradient>
         </defs>
-        <rect width="40" height="40" rx="10" fill="url(#sw-logo-grad)" />
+        <rect width="48" height="48" rx="14" fill="url(#sw-bg)" />
+        <rect x="13" y="11" width="18" height="24" rx="3" fill="#fff" />
+        <path d="M16 17h12M16 21h12M16 25h8" stroke="#0d9488" strokeWidth="2" strokeLinecap="round" />
         <path
-          d="M12 28V12h10.5c3.2 0 5.5 1.8 5.5 4.6 0 2.1-1.2 3.6-3.1 4.2 2.4.5 3.9 2.2 3.9 4.8 0 3.1-2.6 4.4-6.2 4.4H12zm4.2-14.2v4.3h5.8c1.5 0 2.4-.7 2.4-2.1 0-1.4-.9-2.2-2.5-2.2h-5.7zm0 8.3v4.5h6.4c1.8 0 2.8-.8 2.8-2.3 0-1.5-1-2.2-2.9-2.2h-6.3z"
-          fill="#fff"
+          d="M27 29l10-10 2.5 2.5L29.5 31.5 27 32l.5-2.5z"
+          fill="#0f766e"
         />
+        <circle cx="35" cy="13" r="2.5" fill="#fff" fillOpacity="0.9" />
         <path
-          d="M27.5 11.5l2 1.2-7.5 12.8-2-1.2 7.5-12.8z"
-          fill="#fff"
-          opacity="0.9"
+          d="M35 9.5v7M31.5 13h7"
+          stroke="#fff"
+          strokeWidth="1.4"
+          strokeLinecap="round"
         />
       </svg>
       {showWordmark && (

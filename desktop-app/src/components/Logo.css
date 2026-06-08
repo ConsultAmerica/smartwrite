@@ -8,7 +8,7 @@
 .brand-logo-icon {
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .brand-logo-text {
@@ -19,10 +19,10 @@
 }
 
 .brand-logo-text strong {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.03em;
-  color: var(--text);
+  color: var(--fg-strong);
 }
 
 .brand-logo-text span {

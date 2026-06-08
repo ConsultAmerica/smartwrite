@@ -19,7 +19,6 @@ import type {
   GrammarIssue,
   HistoryEntry,
   SaveStatus,
-  Theme,
   ToneMode,
   ToneResult,
   WritingMode,
@@ -51,10 +50,6 @@ export default function App() {
   const didInitialCheck = useRef(false);
   const writingModeRef = useRef<WritingMode>("general");
 
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem("smartwrite-theme");
-    return saved === "dark" ? "dark" : "light";
-  });
   const {
     value: text,
     setValue: pushText,
@@ -129,9 +124,9 @@ export default function App() {
   );
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("smartwrite-theme", theme);
-  }, [theme]);
+    document.documentElement.setAttribute("data-theme", "light");
+    localStorage.setItem("smartwrite-theme", "light");
+  }, []);
 
   const refreshBackend = useCallback(async () => {
     setBackendOnline(await api.healthCheck());
@@ -580,8 +575,6 @@ export default function App() {
         onDocTitleChange={setDocTitle}
         text={text}
         writingMode={writingMode}
-        theme={theme}
-        onThemeToggle={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
         onUndo={undo}
         onRedo={redo}
         canUndo={canUndo}

@@ -3,7 +3,12 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  position: relative;
   background: transparent;
+}
+
+.app > * {
+  position: relative;
 }
 
 .app-body {
@@ -40,8 +45,7 @@
   width: 360px;
   flex-shrink: 0;
   border-left: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg-panel) 92%, transparent);
-  backdrop-filter: blur(8px);
+  background: var(--bg-panel);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -78,3 +82,4 @@
     max-height: 42vh;
   }
 }
+

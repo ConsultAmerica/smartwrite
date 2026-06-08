@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Theme, WritingMode } from "../types";
+import type { WritingMode } from "../types";
 import { MODE_INFO } from "../constants/modeConfig";
 import { getTextStats } from "../utils/textStats";
 import Logo from "./Logo";
@@ -10,8 +10,6 @@ interface Props {
   onDocTitleChange: (title: string) => void;
   text: string;
   writingMode: WritingMode;
-  theme: Theme;
-  onThemeToggle: () => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -33,8 +31,6 @@ export default function TopBar({
   onDocTitleChange,
   text,
   writingMode,
-  theme,
-  onThemeToggle,
   onUndo,
   onRedo,
   canUndo,
@@ -109,9 +105,6 @@ export default function TopBar({
               {onNewDoc && <button type="button" onClick={onNewDoc}>New document</button>}
               {onCopy && <button type="button" onClick={onCopy}>Copy text</button>}
               {onClear && <button type="button" onClick={onClear}>Clear editor</button>}
-              <button type="button" onClick={onThemeToggle}>
-                {theme === "dark" ? "☀ Light mode" : "☾ Soft dark"}
-              </button>
             </div>
           )}
         </div>
