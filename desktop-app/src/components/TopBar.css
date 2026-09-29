@@ -4,8 +4,9 @@
   gap: 12px;
   min-height: 52px;
   padding: 0 16px;
-  background: #ffffff;
+  background: rgba(247, 249, 252, 0.92);
   border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }
 

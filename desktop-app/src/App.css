@@ -15,6 +15,8 @@
   display: flex;
   flex: 1;
   min-height: 0;
+  gap: 14px;
+  padding: 14px;
 }
 
 .app-center {
@@ -44,11 +46,14 @@
 .insights-panel {
   width: 360px;
   flex-shrink: 0;
-  border-left: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   background: var(--bg-panel);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .insights-body {
@@ -73,12 +78,13 @@
 @media (max-width: 900px) {
   .app-body {
     flex-direction: column;
+    gap: 10px;
+    padding: 10px;
   }
 
   .insights-panel {
     width: 100%;
-    border-left: none;
-    border-top: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     max-height: 42vh;
   }
 }

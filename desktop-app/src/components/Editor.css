@@ -15,10 +15,11 @@
 
 .editor-canvas-inner .writing-editor {
   width: 100%;
-  max-width: 720px;
+  max-width: 760px;
   font-family: var(--font);
-  background: #ffffff;
+  background: var(--bg-editor);
   border-color: var(--border);
+  border-radius: 16px;
   box-shadow: var(--shadow);
 }
 
