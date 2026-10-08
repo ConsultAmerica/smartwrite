@@ -42,12 +42,71 @@ export function scoreLevel(score: number): "excellent" | "good" | "fair" | "poor
   return "poor";
 }
 
+/** Generic fallback — prefer dimension-specific helpers below. */
 export function scoreLevelLabel(score: number): string {
-  const level = scoreLevel(score);
-  if (level === "excellent") return "Excellent";
-  if (level === "good") return "Good";
-  if (level === "fair") return "Needs improvement";
-  return "Poor";
+  return correctnessLabel(score);
+}
+
+export function correctnessLabel(score: number): string {
+  if (score >= 90) return "Strong";
+  if (score >= 80) return "Good";
+  if (score >= 70) return "Moderate";
+  if (score >= 55) return "Fair";
+  return "Weak";
+}
+
+export function clarityLabel(score: number): string {
+  if (score >= 88) return "Clear";
+  if (score >= 78) return "Good";
+  if (score >= 68) return "Moderate";
+  return "Unclear";
+}
+
+export function engagementLabel(score: number): string {
+  if (score >= 88) return "Strong";
+  if (score >= 78) return "Good";
+  if (score >= 68) return "Moderate";
+  if (score >= 55) return "Low";
+  return "Weak";
+}
+
+export function toneDimensionLabel(
+  toneName: string | undefined,
+  score: number | null | undefined,
+  mode: WritingMode = "general"
+): string {
+  const raw = (toneName ?? "").trim();
+  if (raw) {
+    if (/professional/i.test(raw)) return "Professional";
+    if (/formal|academic/i.test(raw)) return "Formal";
+    if (/friendly/i.test(raw)) return "Friendly";
+    if (/confident/i.test(raw)) return "Confident";
+    if (/neutral/i.test(raw)) return "Neutral";
+    if (/casual|informal/i.test(raw)) return "Casual";
+    if (raw.length <= 18) return raw;
+  }
+  if (score != null) {
+    if (score >= 85) return mode === "academic" ? "Formal" : "Professional";
+    if (score >= 70) return "Neutral";
+    return "Casual";
+  }
+  if (mode === "academic") return "Formal";
+  if (mode === "resume") return "Confident";
+  if (mode === "email" || mode === "business") return "Professional";
+  return "Neutral";
+}
+
+export function scoreDots(score: number): string {
+  const filled = Math.max(1, Math.min(5, Math.round(score / 20)));
+  return "●".repeat(filled) + "○".repeat(5 - filled);
+}
+
+/** Cap so perfect scores stay uncommon. */
+export function clampDisplayScore(score: number, issueCount = 0): number {
+  let next = Math.round(score);
+  if (issueCount > 0) next = Math.min(next, 88);
+  else next = Math.min(next, 96);
+  return Math.max(35, next);
 }
 
 export function calculateWritingScores(
@@ -63,26 +122,31 @@ export function calculateWritingScores(
 
   const grammar = Math.max(
     40,
-    Math.min(99, (base?.grammar ?? 100) - grammarIssues * 8 - issuePenalty * 0.3)
+    Math.min(96, (base?.grammar ?? 92) - grammarIssues * 9 - issuePenalty * 0.35)
   );
-  const clarity = Math.max(40, Math.min(99, (base?.clarity ?? 100) - issues.filter((i) => i.issue_type === "clarity").length * 10));
+  const clarity = Math.max(
+    40,
+    Math.min(96, (base?.clarity ?? 88) - issues.filter((i) => i.issue_type === "clarity").length * 11)
+  );
   const tone = Math.max(
     40,
     Math.min(
-      99,
-      (base?.tone ?? 85) -
-        issues.filter((i) => ["tone_issue", "casual_wording", "blunt_wording", "informal"].includes(i.issue_type)).length * 12
+      94,
+      (base?.tone ?? 82) -
+        issues.filter((i) =>
+          ["tone_issue", "casual_wording", "blunt_wording", "informal"].includes(i.issue_type)
+        ).length * 12
     )
   );
   const avgSentence = words / Math.max(1, text.split(/[.!?]+/).filter(Boolean).length);
   const readability = Math.max(
     45,
-    Math.min(99, 100 - Math.max(0, avgSentence - 18) * 3 - (words > 400 ? 5 : 0))
+    Math.min(94, 90 - Math.max(0, avgSentence - 18) * 3 - (words > 400 ? 5 : 0))
   );
   const professionalism = Math.max(
     40,
     Math.min(
-      99,
+      94,
       (base?.professionalism ?? base?.grammar ?? grammar) -
         issues.filter((i) =>
           ["blunt_wording", "casual_wording", "weak_verb", "vague_wording", "informal"].includes(i.issue_type)
@@ -91,13 +155,14 @@ export function calculateWritingScores(
   );
 
   let overall = Math.round((grammar + clarity + tone + readability + professionalism) / 5);
-  if (issues.length > 0) overall = Math.min(overall, 89);
+  if (issues.length > 0) overall = Math.min(overall, 88);
+  else overall = Math.min(overall, 96);
   if (mode === "resume" && base?.grammar) {
     overall = Math.round(((base.grammar as number) + clarity + professionalism) / 3);
   }
 
   return {
-    overall: Math.max(35, Math.min(99, overall)),
+    overall: clampDisplayScore(overall, issues.length),
     grammar: Math.round(grammar),
     clarity: Math.round(clarity),
     tone: Math.round(tone),
@@ -138,6 +203,17 @@ export function issueCategory(issue: GrammarIssue): string {
     risk_clarity: "clarity",
   };
   return map[t] ?? issue.category ?? "grammar";
+}
+
+/** Grammarly-style sidebar buckets for contextual suggestion filters. */
+export type SuggestionBucket = "correctness" | "clarity" | "tone" | "style";
+
+export function suggestionBucket(issue: GrammarIssue): SuggestionBucket {
+  const cat = issueCategory(issue);
+  if (cat === "grammar" || cat === "spelling" || cat === "punctuation") return "correctness";
+  if (cat === "clarity" || cat === "conciseness") return "clarity";
+  if (cat === "tone") return "tone";
+  return "style";
 }
 
 export function downloadTextFile(filename: string, content: string, mime = "text/plain"): void {

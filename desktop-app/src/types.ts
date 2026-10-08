@@ -97,6 +97,10 @@ export interface Document {
   content: string;
   created_at: string;
   updated_at: string;
+  local_id?: string;
+  favorite?: boolean;
+  trashed?: boolean;
+  trashed_at?: string;
 }
 
 export interface HistoryEntry {
@@ -109,12 +113,18 @@ export interface HistoryEntry {
   updated_at: string;
 }
 
+export type TemplateCategory = "email" | "academic" | "business" | "career" | "healthcare" | "general";
+
 export interface DocumentTemplate {
   id: string;
   title: string;
   description: string;
   mode: WritingMode;
   content: string;
+  category: TemplateCategory;
+  image: string;
+  featured?: boolean;
+  previewLabel?: string;
 }
 
 export interface AiRewritePreview {
@@ -126,7 +136,29 @@ export interface AiRewritePreview {
 }
 
 export type Theme = "dark" | "light";
-export type SaveStatus = "saved" | "unsaved" | "saving";
+export type SaveStatus =
+  | "saved"
+  | "unsaved"
+  | "saving"
+  | "offline"
+  | "error"
+  | "retrying";
+
+export interface DocumentMeta {
+  favorite?: boolean;
+  trashed?: boolean;
+  trashed_at?: string;
+  /** Stable fingerprints of dismissed suggestions for this document. */
+  dismissed?: string[];
+  goals?: {
+    audience?: string;
+    documentType?: string;
+    tone?: string;
+    formality?: string;
+    intent?: string;
+  };
+  writing_mode?: string;
+}
 
 export type AgentType = "clarity" | "tone" | "grader" | "humanizer";
 

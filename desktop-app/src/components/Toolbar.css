@@ -1,29 +1,209 @@
 .editor-toolbar {
+  position: absolute;
+  z-index: 20;
+  top: 8px;
+  left: 50%;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 0;
-}
-
-.toolbar-btn {
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 500;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 24px);
+  padding: 4px;
+  overflow: visible;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--bg-elevated);
-  color: var(--text);
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+  animation: selection-tools-enter 0.12s ease-out;
 }
 
-.toolbar-btn:hover:not(:disabled) {
+.toolbar-btn,
+.toolbar-drawer-button {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.toolbar-btn:hover:not(:disabled),
+.toolbar-drawer-button:hover:not(:disabled) {
+  border-color: var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.toolbar-menu-wrap {
+  position: relative;
+}
+
+.toolbar-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  min-width: 140px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+}
+
+.toolbar-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.toolbar-dropdown button:hover:not(:disabled) {
   background: var(--accent-soft);
-  border-color: var(--accent-muted);
   color: var(--accent);
 }
 
-.toolbar-btn:disabled {
+.toolbar-btn:disabled,
+.toolbar-drawer-button:disabled {
+  cursor: wait;
   opacity: 0.5;
-  cursor: not-allowed;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: var(--border);
+}
+
+.toolbar-drawer-button {
+  width: 30px;
+  padding: 6px 0;
+  color: var(--ai);
+  font-size: 14px;
+}
+
+.ask-smartwrite {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(300px, calc(100vw - 32px));
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-lg);
+}
+
+.ask-smartwrite header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ask-smartwrite header strong {
+  font-size: var(--type-suggestion);
+  font-weight: 600;
+}
+
+.ask-smartwrite header button {
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.ask-hint {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--type-support);
+  color: var(--text-muted);
+}
+
+.ask-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.ask-chips button {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--type-support);
+  color: var(--text);
+}
+
+.ask-chips button:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ask-custom {
+  display: flex;
+  gap: 6px;
+}
+
+.ask-custom input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: var(--type-support);
+}
+
+.ask-custom button {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--ai);
+  color: #fff;
+  font-size: var(--type-meta);
+  font-weight: 600;
+}
+
+.ask-custom button:disabled {
+  opacity: 0.45;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@keyframes selection-tools-enter {
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (max-width: 640px) {
+  .editor-toolbar {
+    left: 12px;
+    max-width: calc(100% - 24px);
+    transform: none;
+  }
+
+  .toolbar-paragraph {
+    display: none;
+  }
 }

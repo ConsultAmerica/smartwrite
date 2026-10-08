@@ -1,9 +1,11 @@
 .editor-canvas {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 0 24px 24px;
+  padding: 4px 12px 8px;
+  background: var(--bg);
 }
 
 .editor-canvas-inner {
@@ -15,17 +17,35 @@
 
 .editor-canvas-inner .writing-editor {
   width: 100%;
-  max-width: 760px;
+  max-width: 800px;
+  min-height: 100%;
   font-family: var(--font);
   background: var(--bg-editor);
-  border-color: var(--border);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .editor-canvas-inner .editor-backdrop,
 .editor-canvas-inner .editor-textarea {
   font-family: var(--font);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 17px;
+  line-height: 1.7;
+  font-weight: 400;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .editor-canvas {
+    padding: 0 0 72px;
+  }
+
+  .editor-canvas-inner .writing-editor {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
+  }
 }

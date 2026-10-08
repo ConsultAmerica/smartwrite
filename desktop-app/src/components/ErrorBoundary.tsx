@@ -16,16 +16,17 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("SmartWrite UI error:", error, info.componentStack);
+    console.error("SmartWrite UI error:", error.message, info.componentStack);
   }
 
   render() {
     if (this.state.error) {
+      const isDev = Boolean(import.meta.env?.DEV);
       return (
-        <div className="error-boundary">
-          <h1>SmartWrite AI failed to load</h1>
-          <p>{this.state.error.message}</p>
-          <pre>{this.state.error.stack}</pre>
+        <div className="error-boundary" role="alert">
+          <h1>Something went wrong</h1>
+          <p>SmartWrite hit an unexpected error. Your drafts are still saved locally.</p>
+          {isDev && <p className="error-boundary-detail">{this.state.error.message}</p>}
           <button type="button" onClick={() => window.location.reload()}>
             Reload app
           </button>

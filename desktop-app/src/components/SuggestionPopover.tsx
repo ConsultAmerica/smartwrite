@@ -1,4 +1,5 @@
 import type { GrammarIssue } from "../types";
+import { suggestionBucket } from "../services/scoring";
 import "./SuggestionPopover.css";
 
 interface Props {
@@ -11,6 +12,13 @@ interface Props {
   onClose: () => void;
 }
 
+const BUCKET_LABEL: Record<string, string> = {
+  correctness: "Correctness",
+  clarity: "Clarity",
+  tone: "Tone",
+  style: "Style",
+};
+
 export default function SuggestionPopover({
   issue,
   top,
@@ -21,22 +29,24 @@ export default function SuggestionPopover({
   onClose,
 }: Props) {
   const suggestion = issue.suggestion || issue.replacements[0] || "";
+  const bucket = suggestionBucket(issue);
 
   return (
     <div
-      className="suggestion-popover"
+      className={`suggestion-popover bucket-${bucket}`}
       style={{ top, left }}
       onMouseLeave={onClose}
       role="dialog"
       aria-label="Suggestion"
     >
-      <span className="sp-type">{issue.issue_title || issue.category || "Suggestion"}</span>
+      <span className="sp-type">{BUCKET_LABEL[bucket] ?? "Suggestion"}</span>
+      <p className="sp-title">{issue.short_message || issue.issue_title || issue.message}</p>
       <p className="sp-fix">
-        <span className="sp-original">{issue.problem || "…"}</span>
+        <span className="sp-original">“{issue.problem || "…"}”</span>
         {suggestion && (
           <>
-            <span className="sp-arrow"> → </span>
-            <span className="sp-suggestion">{suggestion}</span>
+            <span className="sp-arrow">→</span>
+            <span className="sp-suggestion">“{suggestion}”</span>
           </>
         )}
       </p>
@@ -48,11 +58,11 @@ export default function SuggestionPopover({
           </button>
         )}
         <button type="button" className="btn secondary sp-btn" onClick={onIgnore}>
-          Ignore
+          Dismiss
         </button>
         {onAskAgent && (
           <button type="button" className="btn ghost sp-btn" onClick={onAskAgent}>
-            Ask Agent
+            Ask AI
           </button>
         )}
       </div>

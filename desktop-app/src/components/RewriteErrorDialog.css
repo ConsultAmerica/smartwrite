@@ -1,0 +1,65 @@
+.rewrite-error-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: rgba(17, 24, 39, 0.28);
+  padding: 16px;
+}
+
+.rewrite-error-dialog {
+  width: min(380px, 100%);
+  padding: 20px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+.rewrite-error-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.rewrite-error-dialog p {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.rewrite-error-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.rewrite-error-retry {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rewrite-error-retry:hover {
+  background: var(--accent-hover);
+}
+
+.rewrite-error-cancel {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.rewrite-error-cancel:hover {
+  background: var(--bg-hover);
+}

@@ -1,8 +1,8 @@
 {
   "name": "smartwrite-ai",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "private": true,
-  "description": "SmartWrite AI - run backend + desktop together",
+  "description": "SmartWrite RC1 — Data Integrity & AI Safety Hardened",
   "scripts": {
     "predev": "scripts\\free-dev-ports.cmd",
     "predev:web": "scripts\\free-dev-ports.cmd",
@@ -15,7 +15,10 @@
     "start:web": "scripts\\start-web-prod.cmd",
     "preview:web": "npm run build:web && concurrently -k -n backend,preview -c blue,green \"npm run dev:backend\" \"npm run preview --prefix desktop-app -- --host 127.0.0.1\"",
     "install:all": "npm install && npm install --prefix desktop-app",
-    "setup": "cd backend && python -m pip install -r requirements.txt"
+    "setup": "cd backend && python -m pip install -r requirements.txt",
+    "test": "npm test --prefix desktop-app && cd backend && python -m pytest tests/test_api_contract.py -q",
+    "smoke:rc1": "node scripts/smoke-rc1.mjs",
+    "load:rc1": "node scripts/load-race.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

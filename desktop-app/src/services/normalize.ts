@@ -38,9 +38,17 @@ export function normalizeIssues(
   text: string
 ): GrammarIssue[] {
   if (!Array.isArray(items)) return [];
-  return items.map((item) =>
-    normalizeIssue(item as Record<string, unknown>, text)
-  );
+  return items
+    .map((item) => normalizeIssue(item as Record<string, unknown>, text))
+    .filter((issue) => {
+      if (issue.offset < 0 || issue.offset > text.length) return false;
+      if (issue.length < 0 || issue.offset + issue.length > text.length) return false;
+      if (issue.problem && issue.length > 0) {
+        const slice = text.slice(issue.offset, issue.offset + issue.length);
+        return slice === issue.problem || slice.includes(issue.problem);
+      }
+      return true;
+    });
 }
 
 export function normalizeClaritySuggestions(items: unknown[]): import("../types").ClaritySuggestion[] {

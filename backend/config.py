@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     ollama_base_url: str = "http://127.0.0.1:11434/v1"
-    ollama_model: str = "llama3.2"
+    ollama_model: str = "gemma3:4b"
     languagetool_api_url: str = ""
     database_path: str = str(Path(__file__).resolve().parent.parent / "database" / "app.db")
     cors_origins: str = (
@@ -21,6 +21,8 @@ class Settings(BaseSettings):
         "http://localhost:8002,http://127.0.0.1:8002"
     )
     serve_web: bool = False
+    # Protect /api/metrics — required in production / SERVE_WEB. Empty = local-only open.
+    metrics_token: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:

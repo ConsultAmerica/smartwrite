@@ -1,36 +1,22 @@
 .brand-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   user-select: none;
 }
 
 .brand-logo-icon {
   flex-shrink: 0;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.35);
+  border-radius: 8px;
+  box-shadow: none;
 }
 
 .brand-logo-text {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text);
   line-height: 1;
-}
-
-.brand-logo-text strong {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--fg-strong);
-}
-
-.brand-logo-text span {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
 }
 
 @media (max-width: 900px) {

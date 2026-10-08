@@ -7,6 +7,21 @@ import { analyzeHealthcareLocally, looksLikeHealthcareText } from "./healthcareA
 import { analyzeResumeLocally, looksLikeWeakResumeBullet } from "./resumeAnalysis";
 import { modeResultToTone, type ModeCheckResult } from "./modeTone";
 import { normalizeClaritySuggestions, normalizeIssues } from "./normalize";
+import {
+  classifyRewriteFailure,
+  RewriteServiceError,
+} from "./rewriteErrors";
+import type { AsyncOpMeta } from "./asyncOp";
+
+function correlationHeaders(meta?: AsyncOpMeta): Record<string, string> {
+  if (!meta) return {};
+  return {
+    "X-Request-ID": meta.requestId,
+    "X-Document-Key": meta.documentKey,
+    "X-Client-Revision": String(meta.clientRevision),
+    "X-Started-At": String(meta.startedAt),
+  };
+}
 
 function resolveApiBase(): string {
   const envBase = import.meta.env.VITE_API_BASE?.trim();
@@ -81,10 +96,10 @@ function mapCheckResult(raw: ModeCheckResult, text: string): ModeCheckResult {
   return {
     ...raw,
     issues: normalizeIssues(raw.issues ?? [], text),
-    clarity_score: Number(raw.clarity_score ?? 100),
+    clarity_score: Math.min(96, Number(raw.clarity_score ?? 88)),
     clarity_suggestions: normalizeClaritySuggestions(raw.clarity_suggestions ?? []),
     issue_count: Number(raw.issue_count ?? (raw.issues as unknown[] | undefined)?.length ?? 0),
-    grammar_score: Number(raw.grammar_score ?? 100),
+    grammar_score: Math.min(96, Number(raw.grammar_score ?? 90)),
     resume_strength_score: raw.resume_strength_score,
     impact_score: raw.impact_score,
     professionalism_score: raw.professionalism_score,
@@ -142,9 +157,9 @@ function analyzeLocally(mode: WritingMode, text: string): ModeCheckResult {
       return mergeGeneralIssues(
         {
           issues: [],
-          grammar_score: 100,
+          grammar_score: 92,
           issue_count: 0,
-          clarity_score: 100,
+          clarity_score: 88,
           clarity_suggestions: [],
           writing_mode: "general",
           tone: "Neutral",
@@ -221,24 +236,150 @@ export async function detectTone(
     user_dictionary: userDictionary ?? [],
   });
   const issueCount = Number(raw.suggestion_count ?? 0);
-  const grammarScore = issueCount > 0 ? Math.min(Number(raw.grammar_score ?? 100), 99) : 100;
+  const grammarScore =
+    issueCount > 0
+      ? Math.min(Number(raw.grammar_score ?? 88), 88)
+      : Math.min(Number(raw.grammar_score ?? 92), 96);
   return {
     ...raw,
     grammar_score: grammarScore,
     clarity_suggestions: normalizeClaritySuggestions(raw.clarity_suggestions ?? []),
     summary:
       issueCount === 0
-        ? "Writing looks clean — keep going!"
-        : `${issueCount} issue${issueCount === 1 ? "" : "s"} to fix. Grammar score: ${grammarScore}%.`,
+        ? "No critical issues detected."
+        : `${issueCount} suggestion${issueCount === 1 ? "" : "s"} available.`,
   };
 }
+
+export type ServiceStatus = "checking" | "online" | "offline" | "degraded";
+
+const REWRITE_TIMEOUT_MS = 25000;
 
 export async function rewrite(
   text: string,
   mode: ToneMode,
-  documentId?: number | null
-): Promise<{ rewritten_text: string; mode: string; source: string }> {
-  return post("/rewrite", { text, mode, document_id: documentId ?? null });
+  documentId?: number | null,
+  options?: {
+    signal?: AbortSignal;
+    goals?: Record<string, string>;
+    documentType?: string;
+    meta?: AsyncOpMeta;
+  }
+): Promise<{ rewritten_text: string; rewritten: string; mode: string; source: string }> {
+  const bases = API_BASE ? [API_BASE] : [""];
+  if (import.meta.env.DEV && !API_BASE) bases.push(DEV_BACKEND);
+
+  const paths = ["/api/rewrite", "/rewrite"];
+  let lastError: RewriteServiceError | null = null;
+  const requestId = options?.meta?.requestId ?? `rw-${Date.now().toString(36)}`;
+
+  for (const base of bases) {
+    for (const path of paths) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const controller = new AbortController();
+        const onOuterAbort = () => controller.abort();
+        options?.signal?.addEventListener("abort", onOuterAbort);
+        const timer = window.setTimeout(() => controller.abort(), REWRITE_TIMEOUT_MS);
+        const started = performance.now();
+        try {
+          const res = await fetch(`${base}${path}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...correlationHeaders(options?.meta),
+            },
+            body: JSON.stringify({
+              text,
+              mode,
+              document_id: documentId ?? null,
+              documentType: options?.documentType ?? null,
+              goals: options?.goals ?? null,
+            }),
+            signal: controller.signal,
+          });
+          const rawText = await res.text();
+          type RewritePayload = {
+            success?: boolean;
+            error?: string;
+            code?: string;
+            message?: string;
+            result?: string;
+            rewritten?: string;
+            rewritten_text?: string;
+            mode?: string;
+            source?: string;
+          };
+          let data: RewritePayload | null = null;
+          try {
+            data = JSON.parse(rawText) as RewritePayload;
+          } catch {
+            data = null;
+          }
+
+          const duration = Math.round(performance.now() - started);
+          if (import.meta.env.DEV) {
+            console.info("[SmartWrite rewrite]", {
+              requestId,
+              route: `${base}${path}`,
+              status: res.status,
+              duration,
+              attempt,
+            });
+          }
+
+          if (!res.ok) {
+            lastError = classifyRewriteFailure(res.status, rawText);
+            if (res.status >= 400 && res.status < 500 && res.status !== 408) break;
+            continue;
+          }
+
+          if (data?.success === false) {
+            lastError = classifyRewriteFailure(res.status || 503, rawText);
+            break;
+          }
+
+          const rewritten = data?.result || data?.rewritten || data?.rewritten_text || "";
+          if (!rewritten) {
+            lastError = new RewriteServiceError("INTERNAL_ERROR", "Empty rewrite response.");
+            continue;
+          }
+
+          return {
+            rewritten_text: rewritten,
+            rewritten,
+            mode: data?.mode || mode,
+            source: data?.source || "unknown",
+          };
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (import.meta.env.DEV) {
+            console.error("[SmartWrite rewrite]", { requestId, route: `${base}${path}`, error: msg });
+          }
+          if (e instanceof DOMException && e.name === "AbortError") {
+            if (options?.signal?.aborted) {
+              throw new RewriteServiceError("UNKNOWN", "Rewrite cancelled.");
+            }
+            lastError = new RewriteServiceError("MODEL_TIMEOUT", "Rewrite request timed out.");
+            break;
+          } else if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) {
+            lastError = new RewriteServiceError("BACKEND_UNAVAILABLE", "Backend unreachable.");
+            // one automatic retry for transient network only
+            if (attempt === 0) continue;
+          } else {
+            lastError = new RewriteServiceError("UNKNOWN", msg);
+            break;
+          }
+        } finally {
+          window.clearTimeout(timer);
+          options?.signal?.removeEventListener("abort", onOuterAbort);
+        }
+      }
+      if (lastError && !["BACKEND_UNAVAILABLE", "ENDPOINT_MISSING"].includes(lastError.code)) {
+        break;
+      }
+    }
+  }
+  throw lastError ?? new RewriteServiceError("BACKEND_UNAVAILABLE", "Backend unreachable.");
 }
 
 export async function improveResume(
@@ -294,15 +435,44 @@ export async function saveDocument(
 }
 
 export async function deleteDocument(id: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/documents/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Delete failed");
+  const bases = API_BASE ? [API_BASE] : [""];
+  if (import.meta.env.DEV && !API_BASE) bases.push(DEV_BACKEND);
+
+  let lastError = "Delete failed";
+  for (const base of bases) {
+    try {
+      const res = await fetch(`${base}/documents/${id}`, { method: "DELETE" });
+      if (res.ok) return;
+      lastError = (await res.text()) || `HTTP ${res.status}`;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+  }
+  throw new Error(lastError);
 }
 
 export async function healthCheck(): Promise<boolean> {
+  const status = await getServiceStatus();
+  return status === "online" || status === "degraded";
+}
+
+export async function getServiceStatus(): Promise<ServiceStatus> {
   try {
-    const data = await get<{ api?: string }>("/health");
-    return data.api === "backend-v1";
+    const data = await get<{
+      api?: string;
+      status?: string;
+      service?: string;
+      rewrite?: string | boolean;
+    }>("/health");
+    const okService =
+      data.api === "backend-v1" ||
+      data.service === "SmartWrite" ||
+      data.service === "smartwrite-api";
+    if (!okService && data.status !== "ok") return "offline";
+    if (data.rewrite === "unavailable" || data.rewrite === false) return "degraded";
+    if (data.rewrite === "degraded" || data.status === "degraded") return "degraded";
+    return "online";
   } catch {
-    return false;
+    return "offline";
   }
 }

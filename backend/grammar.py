@@ -162,6 +162,27 @@ def _custom_issues_general(text: str) -> list[GrammarIssue]:
     """General-mode extras — grammar, clarity, punctuation (not resume/healthcare)."""
     custom: list[GrammarIssue] = []
 
+    for m in re.finditer(r"(\$\d+(?:\.\d{2})?)\.([a-zA-Z])\b", text):
+        bad = text[m.start() : m.end()]
+        suggestion = m.group(1)
+        custom.append(
+            GrammarIssue(
+                id=f"custom-currency-{m.start()}",
+                message="Possible number formatting error.",
+                short_message="Possible formatting error",
+                issue_title="Possible formatting error",
+                problem=bad,
+                suggestion=suggestion,
+                why="Currency amounts usually end after the number (e.g. $20), not with an extra letter.",
+                offset=m.start(),
+                length=len(bad),
+                replacements=[suggestion],
+                rule_id="CUSTOM_CURRENCY_FORMAT",
+                category="punctuation",
+                issue_type="grammar",
+            )
+        )
+
     for m in re.finditer(r"\bthe\s+biggest\s+improving\s+now\b", text, re.IGNORECASE):
         phrase = text[m.start() : m.end()]
         custom.append(

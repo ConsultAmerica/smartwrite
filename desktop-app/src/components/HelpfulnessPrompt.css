@@ -1,0 +1,46 @@
+.helpfulness-prompt {
+  position: fixed;
+  z-index: 80;
+  right: 20px;
+  bottom: 72px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: min(360px, calc(100vw - 40px));
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated, var(--bg));
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.helpfulness-prompt > span {
+  margin-right: 2px;
+}
+
+.helpfulness-prompt button {
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.helpfulness-prompt button:hover {
+  border-color: var(--border);
+  background: var(--bg-elevated);
+}
+
+.helpfulness-reason {
+  color: var(--text-muted) !important;
+}
+
+.helpfulness-dismiss {
+  margin-left: auto;
+  color: var(--text-subtle) !important;
+}

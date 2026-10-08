@@ -1,31 +1,79 @@
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 100dvh;
   overflow: hidden;
   position: relative;
-  background: transparent;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.panel-error-boundary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 20px;
+  color: var(--text);
+}
+
+.panel-error-boundary strong {
+  font-size: 14px;
+}
+
+.panel-error-boundary p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.panel-error-boundary button {
+  margin-top: 4px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .app > * {
   position: relative;
 }
 
+.app > .ai-drawer,
+.app > .ai-drawer-backdrop,
+.app > .toast-stack,
+.app > .mobile-sheet-backdrop,
+.app > .mobile-bottom-nav {
+  position: fixed;
+}
+
 .app-body {
   display: flex;
   flex: 1;
   min-height: 0;
-  gap: 14px;
-  padding: 14px;
+  gap: 0;
+  padding: 0;
+}
+
+.app-body.docs-collapsed .docs-sidebar {
+  display: none;
+}
+
+.app-body.insights-collapsed .insights-panel {
+  display: none;
 }
 
 .app-center {
-  flex: 1;
+  flex: 1 1 62%;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: transparent;
+  background: var(--bg);
+  position: relative;
 }
 
 .editor-main {
@@ -34,58 +82,132 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .editor-wrap {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-.insights-panel {
-  width: 360px;
-  flex-shrink: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--bg-panel);
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+/* Mobile bottom nav + sheets */
+.mobile-bottom-nav {
+  display: none;
+  z-index: 60;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+  gap: 6px;
 }
 
-.insights-body {
+.mobile-bottom-nav button {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  padding: 10px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
-.insights-panel .issues-panel {
-  flex: 1;
-  min-height: 180px;
+.mobile-bottom-nav button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.mobile-bottom-nav button:last-child {
+  color: var(--ai);
+}
+
+.mobile-sheet-backdrop {
+  display: none;
+  z-index: 65;
+  inset: 0;
+  background: rgba(24, 24, 27, 0.28);
+}
+
+.mobile-sheet {
+  display: none;
 }
 
 @media (max-width: 1100px) {
-  .insights-panel {
-    width: 320px;
+  .app-body.docs-collapsed .docs-sidebar {
+    display: none;
   }
 }
 
 @media (max-width: 900px) {
-  .app-body {
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px;
-  }
-
   .insights-panel {
-    width: 100%;
-    border-radius: var(--radius-lg);
-    max-height: 42vh;
+    width: 300px;
   }
 }
 
+@media (max-width: 768px) {
+  .app-body {
+    flex-direction: column;
+  }
+
+  .app-center {
+    flex: 1;
+    width: 100%;
+  }
+
+  .insights-panel {
+    display: none !important;
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  .mobile-sheet-backdrop.open {
+    display: block;
+  }
+
+  .mobile-sheet {
+    display: flex;
+    position: fixed;
+    z-index: 70;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: min(72dvh, 560px);
+    flex-direction: column;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(110%);
+    transition: transform 0.2s ease;
+    overflow: hidden;
+  }
+
+  .mobile-sheet.open {
+    transform: translateY(0);
+  }
+
+  .mobile-sheet .insights-panel {
+    display: flex !important;
+    width: 100%;
+    border-left: none;
+    max-height: min(72dvh, 560px);
+  }
+
+  .mobile-sheet-handle {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .mobile-sheet-handle span {
+    width: 36px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--border-strong);
+  }
+}

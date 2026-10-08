@@ -1,5 +1,5 @@
 import type { GrammarCheckResult, ToneResult, WritingMode } from "../types";
-import { calculateWritingScores } from "./scoring";
+import { calculateWritingScores, clampDisplayScore } from "./scoring";
 
 export type ModeCheckResult = GrammarCheckResult & {
   writing_mode?: string;
@@ -61,14 +61,14 @@ export function modeResultToTone(
   text = ""
 ): ToneResult {
   const count = visibleIssueCount ?? result.issue_count;
-  const clarity = Number(result.clarity_score ?? 100);
-  const grammar = Number(result.grammar_score ?? 100);
+  const clarity = Math.min(96, Number(result.clarity_score ?? 88));
+  const grammar = Math.min(96, Number(result.grammar_score ?? 90));
   const issues = result.issues ?? [];
 
   const writing_scores = calculateWritingScores(text, issues, mode, {
     grammar,
     clarity,
-    professionalism: result.professionalism_score ?? grammar,
+    professionalism: Math.min(94, result.professionalism_score ?? grammar),
   });
 
   if (mode === "resume") {
@@ -83,13 +83,16 @@ export function modeResultToTone(
       suggestion_count: count,
       clarity_suggestions: result.clarity_suggestions ?? [],
       writing_mode: "resume",
-      writing_scores: { ...writing_scores, overall: Math.round((strength + impact + clarity) / 3) },
+      writing_scores: {
+        ...writing_scores,
+        overall: clampDisplayScore(Math.round((strength + impact + clarity) / 3), count),
+      },
       summary: buildModeSummary("resume", count, { strength, impact }),
     };
   }
 
   if (mode === "email") {
-    const prof = result.professionalism_score ?? grammar;
+    const prof = Math.min(94, result.professionalism_score ?? grammar);
     return {
       tone: result.tone ?? "Professional Email",
       clarity_score: clarity,
@@ -98,7 +101,10 @@ export function modeResultToTone(
       suggestion_count: count,
       clarity_suggestions: result.clarity_suggestions ?? [],
       writing_mode: "email",
-      writing_scores,
+      writing_scores: {
+        ...writing_scores,
+        overall: clampDisplayScore(writing_scores.overall, count),
+      },
       summary: buildModeSummary("email", count, { professionalism: prof }),
     };
   }
@@ -115,13 +121,18 @@ export function modeResultToTone(
       suggestion_count: count,
       clarity_suggestions: result.clarity_suggestions ?? [],
       writing_mode: "healthcare",
-      writing_scores: { ...writing_scores, clarity: clinical, professionalism: prof },
+      writing_scores: {
+        ...writing_scores,
+        clarity: clinical,
+        professionalism: prof,
+        overall: clampDisplayScore(writing_scores.overall, count),
+      },
       summary: buildModeSummary("healthcare", count, { clinical, grammar }),
     };
   }
 
   if (mode === "academic") {
-    const prof = result.professionalism_score ?? grammar;
+    const prof = Math.min(94, result.professionalism_score ?? grammar);
     return {
       tone: result.tone ?? "Academic",
       clarity_score: clarity,
@@ -130,13 +141,16 @@ export function modeResultToTone(
       suggestion_count: count,
       clarity_suggestions: result.clarity_suggestions ?? [],
       writing_mode: "academic",
-      writing_scores,
+      writing_scores: {
+        ...writing_scores,
+        overall: clampDisplayScore(writing_scores.overall, count),
+      },
       summary: buildModeSummary("academic", count, { professionalism: prof }),
     };
   }
 
   if (mode === "business") {
-    const prof = result.professionalism_score ?? grammar;
+    const prof = Math.min(94, result.professionalism_score ?? grammar);
     return {
       tone: result.tone ?? "Business Professional",
       clarity_score: clarity,
@@ -145,12 +159,15 @@ export function modeResultToTone(
       suggestion_count: count,
       clarity_suggestions: result.clarity_suggestions ?? [],
       writing_mode: "business",
-      writing_scores,
+      writing_scores: {
+        ...writing_scores,
+        overall: clampDisplayScore(writing_scores.overall, count),
+      },
       summary: buildModeSummary("business", count, { professionalism: prof }),
     };
   }
 
-  const g = count > 0 ? Math.min(grammar, 99) : grammar;
+  const g = count > 0 ? Math.min(grammar, 88) : Math.min(grammar, 96);
   return {
     tone: result.tone ?? "Neutral",
     clarity_score: clarity,
@@ -158,7 +175,11 @@ export function modeResultToTone(
     suggestion_count: count,
     clarity_suggestions: result.clarity_suggestions ?? [],
     writing_mode: "general",
-    writing_scores: { ...writing_scores, grammar: g },
+    writing_scores: {
+      ...writing_scores,
+      grammar: g,
+      overall: clampDisplayScore(writing_scores.overall, count),
+    },
     summary: buildModeSummary("general", count, { grammar: g, clarity }),
   };
 }

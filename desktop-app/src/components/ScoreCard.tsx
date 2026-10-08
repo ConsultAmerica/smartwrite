@@ -1,62 +1,88 @@
+import { useEffect, useState } from "react";
 import type { ToneResult } from "../types";
-import { scoreLevel, scoreLevelLabel } from "../services/scoring";
+import { clampDisplayScore, scoreLevel } from "../services/scoring";
 import "./ScoreCard.css";
 
 interface Props {
   tone: ToneResult | null;
   checking?: boolean;
+  compact?: boolean;
+  issueCount?: number;
+  /** When false (blank document), never invent a resting score. */
+  hasText?: boolean;
+  wordCount?: number;
 }
 
-function ScoreRing({ score }: { score: number }) {
-  const level = scoreLevel(score);
-  return (
-    <div className={`score-ring score-level-${level}`}>
-      <span className="score-ring-value">{score}</span>
-      <span className="score-ring-label">{scoreLevelLabel(score)}</span>
-    </div>
-  );
-}
+export default function ScoreCard({
+  tone,
+  checking,
+  compact = true,
+  issueCount = 0,
+  hasText = false,
+  wordCount = 0,
+}: Props) {
+  const enoughContent = hasText && wordCount >= 20;
+  const raw = enoughContent ? tone?.writing_scores?.overall ?? tone?.grammar_score ?? null : null;
+  const nextScore = raw != null ? clampDisplayScore(raw, issueCount) : null;
 
-function SubScore({ label, value }: { label: string; value: number }) {
-  const level = scoreLevel(value);
-  return (
-    <div className="sub-score">
-      <span className="sub-score-label">{label}</span>
-      <span className={`sub-score-value score-level-${level}`}>{value}%</span>
-      <div className="sub-score-bar">
-        <span className={`sub-score-fill score-level-${level}`} style={{ width: `${value}%` }} />
-      </div>
-    </div>
-  );
-}
+  const [displayScore, setDisplayScore] = useState<number | null>(null);
+  const [updating, setUpdating] = useState(false);
 
-export default function ScoreCard({ tone, checking }: Props) {
-  const scores = tone?.writing_scores;
+  useEffect(() => {
+    if (!hasText || !enoughContent) {
+      setDisplayScore(null);
+      setUpdating(false);
+      return;
+    }
+    if (checking) {
+      setUpdating(true);
+      return;
+    }
+    if (nextScore == null) {
+      setUpdating(Boolean(hasText && checking));
+      return;
+    }
+    setUpdating(true);
+    const id = window.setTimeout(() => {
+      setDisplayScore(nextScore);
+      setUpdating(false);
+    }, 750);
+    return () => window.clearTimeout(id);
+  }, [checking, nextScore, hasText, enoughContent]);
+
+  const level = displayScore != null ? scoreLevel(displayScore) : null;
+  const showUpdating = enoughContent && (checking || updating);
+  const shortDraft = hasText && !enoughContent;
 
   return (
-    <section className="score-card panel-card">
+    <section className={`score-card${compact ? " compact" : ""}`}>
       <div className="score-card-head">
-        <h3>Writing Score</h3>
-        {checking && <span className="score-badge">Analyzing…</span>}
+        <h3>Writing score</h3>
+        {showUpdating && <span className="score-badge">Updating…</span>}
       </div>
-      {!tone ? (
-        <p className="score-empty">Check your writing to see scores.</p>
+      {displayScore == null ? (
+        <div className="score-empty-block">
+          <span className="score-number score-number-empty" aria-hidden="true">
+            —
+          </span>
+          <p className="score-empty">
+            {!hasText
+              ? "Start writing to see your score."
+              : shortDraft
+                ? "Analyzing as you write…"
+                : "Start writing to see your score."}
+          </p>
+        </div>
       ) : (
-        <>
-          <div className="score-card-overview">
-            <ScoreRing score={scores?.overall ?? tone.grammar_score} />
-            <div className="score-card-meta">
-              <p className="score-tone">{tone.tone}</p>
-              <p className="score-summary">{checking ? "Analyzing…" : tone.summary}</p>
-            </div>
+        <div className="score-hero">
+          <div className={`score-hero-value score-level-${level}`}>
+            <span className="score-number">{displayScore}</span>
+            <span className="score-denom">/ 100</span>
           </div>
-          <div className="sub-score-grid">
-            <SubScore label="Clarity" value={scores?.clarity ?? tone.clarity_score} />
-            <SubScore label="Grammar" value={scores?.grammar ?? tone.grammar_score} />
-            <SubScore label="Tone" value={scores?.tone ?? 80} />
-            <SubScore label="Readability" value={scores?.readability ?? tone.clarity_score} />
-          </div>
-        </>
+          {tone?.summary && !compact && (
+            <p className="score-summary">{tone.summary}</p>
+          )}
+        </div>
       )}
     </section>
   );

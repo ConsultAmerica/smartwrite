@@ -219,21 +219,24 @@ async def _llm_agent(agent: str, text: str, options: dict[str, Any]) -> dict[str
     if client is None:
         return _fallback_for(agent, text, options)
 
-    response = client.chat.completions.create(
-        model=_model(),
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": f"Text to process:\n\n{text}"},
-        ],
-        temperature=0.35,
-        max_tokens=1200,
-    )
-    raw = (response.choices[0].message.content or "").strip()
-    parsed = _extract_json(raw)
-    if parsed:
-        return parsed
-    if agent in ("clarity", "tone", "humanizer"):
-        return {"rewrite": raw, "explanation": ["LLM returned plain text; wrapped as rewrite."]}
+    try:
+        response = client.chat.completions.create(
+            model=_model(),
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": f"Text to process:\n\n{text}"},
+            ],
+            temperature=0.35,
+            max_tokens=1200,
+        )
+        raw = (response.choices[0].message.content or "").strip()
+        parsed = _extract_json(raw)
+        if parsed:
+            return parsed
+        if agent in ("clarity", "tone", "humanizer"):
+            return {"rewrite": raw, "explanation": ["LLM returned plain text; wrapped as rewrite."]}
+    except Exception:
+        return _fallback_for(agent, text, options)
     return _fallback_for(agent, text, options)
 
 

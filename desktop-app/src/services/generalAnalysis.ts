@@ -1,4 +1,5 @@
 import type { GrammarCheckResult, GrammarIssue } from "../types";
+import { dedupeIssues } from "../utils/issueFingerprint";
 
 function makeIssue(
   text: string,
@@ -13,7 +14,7 @@ function makeIssue(
   }
 ): GrammarIssue {
   return {
-    id: `gen-${opts.issueType}-${start}`,
+    id: `gen-${opts.issueType}-${start}-${end}`,
     message: opts.message,
     short_message: opts.title,
     issue_title: opts.title,
@@ -29,8 +30,64 @@ function makeIssue(
   };
 }
 
+/** Local rules that work even when the AI backend is down. */
 export function detectGeneralEnhancements(text: string): GrammarIssue[] {
   const issues: GrammarIssue[] = [];
+
+  for (const m of text.matchAll(/(\$\d+(?:\.\d{2})?)\.([a-zA-Z])\b/g)) {
+    const start = m.index ?? 0;
+    const bad = m[0];
+    issues.push(
+      makeIssue(text, start, start + bad.length, {
+        issueType: "grammar",
+        title: "Possible number-formatting issue",
+        message: "Possible number-formatting issue.",
+        suggestion: m[1],
+        why: 'Currency amounts usually end after the number (e.g. "$20"), not with an extra letter.',
+      })
+    );
+  }
+
+  for (const m of text.matchAll(/ {2,}/g)) {
+    const start = m.index ?? 0;
+    if (start === 0) continue;
+    issues.push(
+      makeIssue(text, start, start + m[0].length, {
+        issueType: "style",
+        title: "Extra spaces",
+        message: "Duplicate spaces detected.",
+        suggestion: " ",
+        why: "Use a single space between words.",
+      })
+    );
+    if (issues.length > 12) break;
+  }
+
+  for (const m of text.matchAll(/([.!?,;:])\1+/g)) {
+    const start = m.index ?? 0;
+    issues.push(
+      makeIssue(text, start, start + m[0].length, {
+        issueType: "punctuation",
+        title: "Repeated punctuation",
+        message: "Repeated punctuation.",
+        suggestion: m[1],
+        why: "One punctuation mark is usually enough.",
+      })
+    );
+  }
+
+  for (const m of text.matchAll(/\s+([,.!?;:])/g)) {
+    const start = m.index ?? 0;
+    issues.push(
+      makeIssue(text, start, start + m[0].length, {
+        issueType: "punctuation",
+        title: "Spacing around punctuation",
+        message: "Unexpected space before punctuation.",
+        suggestion: m[1],
+        why: "Punctuation usually sits directly after the preceding word.",
+      })
+    );
+  }
 
   const sheGo = /\b(she|he|it)\s+go\b/i.exec(text);
   if (sheGo) {
@@ -43,6 +100,22 @@ export function detectGeneralEnhancements(text: string): GrammarIssue[] {
         why: "The verb should agree with the subject (she/he/it → goes).",
       })
     );
+  }
+
+  const sentenceStart = /(?:^|[.!?]\s+)([a-z])/g;
+  for (const m of text.matchAll(sentenceStart)) {
+    const letterIndex = (m.index ?? 0) + m[0].length - 1;
+    const letter = m[1];
+    issues.push(
+      makeIssue(text, letterIndex, letterIndex + 1, {
+        issueType: "grammar",
+        title: "Capitalization",
+        message: "Sentences usually start with a capital letter.",
+        suggestion: letter.toUpperCase(),
+        why: "Capitalize the first letter of each sentence.",
+      })
+    );
+    if (issues.length > 14) break;
   }
 
   const everyday = /\beveryday\b/i.exec(text);
@@ -58,25 +131,12 @@ export function detectGeneralEnhancements(text: string): GrammarIssue[] {
     );
   }
 
-  const passive = /\b(was|were|is|are|been|being)\s+\w+ed\b/i.exec(text);
-  if (passive) {
-    issues.push(
-      makeIssue(text, passive.index, passive.index + passive[0].length, {
-        issueType: "clarity",
-        title: "Clarity",
-        message: "Consider active voice for stronger writing.",
-        suggestion: "Rewrite using an active verb (e.g., “The team completed…”).",
-        why: "Active voice is often clearer and more direct than passive voice.",
-      })
-    );
-  }
-
   const repeated = /\b(\w+)\s+\1\b/i.exec(text);
   if (repeated) {
     issues.push(
       makeIssue(text, repeated.index, repeated.index + repeated[0].length, {
         issueType: "conciseness",
-        title: "Conciseness",
+        title: "Repeated word",
         message: "Repeated word detected.",
         suggestion: repeated[1],
         why: "Remove duplicate words to improve flow and readability.",
@@ -94,7 +154,7 @@ export function detectGeneralEnhancements(text: string): GrammarIssue[] {
         why: "Specific words improve clarity and credibility.",
       })
     );
-    if (issues.length > 8) break;
+    if (issues.length > 16) break;
   }
 
   return issues;
@@ -114,7 +174,8 @@ export function mergeGeneralIssues(
       seen.add(key);
     }
   }
-  const count = merged.length;
+  const deduped = dedupeIssues(merged);
+  const count = deduped.length;
   const grammar = count > 0 ? Math.min(base.grammar_score, 99) : base.grammar_score;
-  return { ...base, issues: merged, issue_count: count, grammar_score: grammar };
+  return { ...base, issues: deduped, issue_count: count, grammar_score: grammar };
 }

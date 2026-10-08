@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import SuggestionPopover from "../components/SuggestionPopover";
 import type { GrammarIssue, SaveStatus } from "../types";
@@ -15,6 +16,7 @@ import "./WritingEditor.css";
 export interface WritingEditorHandle {
   scrollToIssue: (issue: GrammarIssue) => void;
   focusEditor: () => void;
+  selectParagraph: () => { start: number; end: number; text: string } | null;
 }
 
 interface Props {
@@ -31,6 +33,7 @@ interface Props {
   onAskAgentFromEditor?: (issue: GrammarIssue) => void;
   selection: { start: number; end: number };
   saveStatus: SaveStatus;
+  emptyOverlay?: ReactNode;
 }
 
 function escapeHtml(s: string): string {
@@ -49,13 +52,20 @@ function issueColor(type: string): string {
       return "var(--highlight-grammar)";
     case "clarity":
     case "vague_wording":
+    case "passive_voice":
+    case "long_sentence":
       return "var(--highlight-clarity)";
     case "tone_issue":
     case "casual_wording":
     case "informal":
+    case "blunt_wording":
       return "var(--highlight-tone)";
     case "style":
-      return "var(--highlight-tone)";
+    case "word_choice":
+    case "conciseness":
+    case "weak_verb":
+    case "repeated_word":
+      return "var(--highlight-engagement)";
     default:
       return "var(--highlight-grammar)";
   }
@@ -107,6 +117,7 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
     onAskAgentFromEditor,
     selection,
     saveStatus,
+    emptyOverlay,
   },
   ref
 ) {
@@ -147,6 +158,33 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
     },
     focusEditor() {
       textareaRef.current?.focus();
+    },
+    selectParagraph() {
+      const textarea = textareaRef.current;
+      if (!textarea || !text.trim()) return null;
+
+      const selectionStart = textarea.selectionStart;
+      const paragraphBreak = /\n[ \t]*\n+/g;
+      let start = 0;
+      let end = text.length;
+      for (const match of text.matchAll(paragraphBreak)) {
+        const boundary = match.index ?? 0;
+        const afterBoundary = boundary + match[0].length;
+        if (afterBoundary <= selectionStart) {
+          start = afterBoundary;
+        } else if (boundary >= selectionStart) {
+          end = boundary;
+          break;
+        }
+      }
+
+      while (start < end && /\s/.test(text[start])) start += 1;
+      while (end > start && /\s/.test(text[end - 1])) end -= 1;
+      if (end <= start) return null;
+
+      textarea.focus();
+      textarea.setSelectionRange(start, end);
+      return { start, end, text: text.slice(start, end) };
     },
   }));
 
@@ -206,12 +244,17 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
       <textarea
         ref={textareaRef}
         className="editor-textarea"
+        aria-label="Document editor"
         value={text}
         onChange={(e) => onChange(e.target.value)}
         onScroll={syncScroll}
-        placeholder="Start writing or paste your text here…"
+        placeholder=""
         spellCheck={false}
       />
+
+      {!text.trim() && emptyOverlay ? (
+        <div className="editor-empty-overlay">{emptyOverlay}</div>
+      ) : null}
 
       {popup && (
         <SuggestionPopover
@@ -242,14 +285,24 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
       )}
 
       <footer className="editor-footer">
-        <span>{stats.words} words</span>
+        <span>{stats.words === 1 ? "1 word" : `${stats.words} words`}</span>
         <span className="sep">|</span>
         <span>{stats.sentences} sentence{stats.sentences !== 1 ? "s" : ""}</span>
         <span className="sep">|</span>
         <span>Reading time: {stats.readingLabel}</span>
         <span className="sep">|</span>
         <span className={`save-status ${saveStatus}`}>
-          {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : "Unsaved"}
+          {saveStatus === "saving"
+            ? "Saving…"
+            : saveStatus === "saved"
+              ? "Saved"
+              : saveStatus === "offline"
+                ? "Offline"
+                : saveStatus === "error"
+                  ? "Save failed"
+                  : saveStatus === "retrying"
+                    ? "Retrying…"
+                    : "Unsaved"}
         </span>
         {selection.end > selection.start && (
           <>
