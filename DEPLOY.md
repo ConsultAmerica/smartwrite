@@ -71,7 +71,9 @@ Update `CORS_ORIGINS` to include your live Vercel URL:
 CORS_ORIGINS=https://grammarly-app.vercel.app,http://localhost:5173,http://127.0.0.1:5173
 ```
 
-Save → Render redeploys. Without this, the browser blocks API calls from Vercel.
+Save → Render redeploys. Without this, the browser blocks API calls from Vercel and the UI shows “SmartWrite is temporarily unavailable.”
+
+The API also allows `https://*.vercel.app` preview URLs via `allow_origin_regex`. After changing `CORS_ORIGINS` on an existing Render service, **Manual Deploy → Deploy latest commit** (blueprint env edits alone may not refresh a live service).
 
 ---
 

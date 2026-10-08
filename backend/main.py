@@ -67,6 +67,8 @@ app.add_middleware(RequestGuardMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
+    # Preview deploys: https://*.vercel.app
+    allow_origin_regex=r"https://([a-z0-9-]+\.)*vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -165,7 +167,8 @@ async def health():
     elif provider == "openai" and not settings.openai_api_key:
         rewrite_status = "unavailable"
     elif not provider:
-        rewrite_status = "degraded"
+        # Empty provider = intentional rule-based fallback (cloud / free tier).
+        rewrite_status = "ok"
 
     overall = "ok"
     if rewrite_status == "unavailable":
