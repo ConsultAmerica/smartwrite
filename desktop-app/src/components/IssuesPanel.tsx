@@ -9,6 +9,7 @@ import {
   toneDimensionLabel,
   type SuggestionBucket,
 } from "../services/scoring";
+import { nearbyWords } from "../utils/textContext";
 import "./IssuesPanel.css";
 
 type FilterId = "all" | SuggestionBucket;
@@ -28,6 +29,8 @@ interface Props {
   writingMode?: WritingMode;
   tone?: ToneResult | null;
   hasText?: boolean;
+  /** Full document text — used for whitespace context snippets. */
+  documentText?: string;
   onSelect: (issue: GrammarIssue) => void;
   onApply: (issue: GrammarIssue, replacement: string) => void;
   onIgnore: (issue: GrammarIssue) => void;
@@ -53,6 +56,55 @@ function originalLabel(issue: GrammarIssue): string {
   return issue.problem || "…";
 }
 
+function isWhitespaceFocused(issue: GrammarIssue, suggestion: string): boolean {
+  const problem = issue.problem ?? "";
+  const blob = `${issue.message} ${issue.short_message} ${issue.issue_title} ${issue.rule_id}`;
+  if (/extra\s*space|whitespace|double\s*space|too many spaces/i.test(blob)) return true;
+  if (problem.length > 0 && /^\s+$/.test(problem)) return true;
+  if (suggestion.length >= 0 && problem.length > 0 && /^\s*$/.test(problem) && /^\s*$/.test(suggestion)) {
+    return true;
+  }
+  // Multiple spaces collapsing to fewer spaces
+  if (/\s{2,}/.test(problem) && suggestion.replace(/\s+/g, " ").trim() === suggestion.trim()) {
+    return / {2,}|\t/.test(problem);
+  }
+  return false;
+}
+
+function WhitespaceDiff({
+  issue,
+  suggestion,
+  documentText = "",
+}: {
+  issue: GrammarIssue;
+  suggestion: string;
+  documentText?: string;
+}) {
+  const problem = issue.problem || "  ";
+  const left = nearbyWords(documentText, issue.offset, issue.length, "before", 2);
+  const right = nearbyWords(documentText, issue.offset, issue.length, "after", 2);
+
+  return (
+    <div className="issue-diff issue-diff-ws" aria-label="Suggested spacing change">
+      <p className="issue-ws-line">
+        {left ? <span className="issue-ws-ctx">{left} </span> : null}
+        <span className="issue-ws-mark bad" title="Extra space">
+          {problem.replace(/ /g, "·") || "··"}
+        </span>
+        {right ? <span className="issue-ws-ctx"> {right}</span> : null}
+      </p>
+      <span className="issue-change-label">Suggested</span>
+      <p className="issue-ws-line">
+        {left ? <span className="issue-ws-ctx">{left} </span> : null}
+        <span className={`issue-ws-mark ${suggestion ? "ok" : "bad"}`}>
+          {suggestion === "" ? "∅" : suggestion.replace(/ /g, "·") || "·"}
+        </span>
+        {right ? <span className="issue-ws-ctx"> {right}</span> : null}
+      </p>
+    </div>
+  );
+}
+
 export default function IssuesPanel({
   issues,
   activeIssueId,
@@ -60,6 +112,7 @@ export default function IssuesPanel({
   writingMode = "general",
   tone = null,
   hasText = false,
+  documentText = "",
   onSelect,
   onApply,
   onIgnore,
@@ -125,19 +178,23 @@ export default function IssuesPanel({
       </div>
 
       <div className="issue-filters" role="tablist" aria-label="Suggestion categories">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            role="tab"
-            aria-selected={filter === f.id}
-            className={filter === f.id ? "active" : ""}
-            onClick={() => setFilter(f.id)}
-          >
-            {f.label}
-            <span className="filter-count">{counts[f.id]}</span>
-          </button>
-        ))}
+        {FILTERS.map((f) => {
+          const count = counts[f.id];
+          const isActive = filter === f.id;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={`${isActive ? "active" : ""}${count === 0 && !isActive ? " is-zero" : ""}`}
+              onClick={() => setFilter(f.id)}
+            >
+              {f.label}
+              {count > 0 ? <span className="filter-count">{count}</span> : null}
+            </button>
+          );
+        })}
       </div>
 
       {filtered.length === 0 && !checking && issues.length === 0 && !hasText && (
@@ -164,23 +221,26 @@ export default function IssuesPanel({
               return [
                 {
                   label: "Correctness",
-                  display: correctness != null ? correctnessLabel(correctness) : "Strong",
-                  dots: scoreDots(correctness ?? 90),
+                  display: correctness != null ? correctnessLabel(correctness) : "—",
+                  dots: correctness != null ? scoreDots(correctness) : null,
                 },
                 {
                   label: "Clarity",
-                  display: clarity != null ? clarityLabel(clarity) : "Clear",
-                  dots: scoreDots(clarity ?? 86),
+                  display: clarity != null ? clarityLabel(clarity) : "—",
+                  dots: clarity != null ? scoreDots(clarity) : null,
                 },
                 {
                   label: "Tone",
-                  display: toneDimensionLabel(tone?.tone, toneScore, writingMode),
+                  display:
+                    tone != null
+                      ? toneDimensionLabel(tone.tone, toneScore, writingMode)
+                      : "—",
                   dots: null as string | null,
                 },
                 {
                   label: "Engagement",
-                  display: engagement != null ? engagementLabel(engagement) : "Moderate",
-                  dots: scoreDots(engagement ?? 72),
+                  display: engagement != null ? engagementLabel(engagement) : "—",
+                  dots: engagement != null ? scoreDots(engagement) : null,
                 },
               ];
             })().map((row) => (
@@ -236,15 +296,23 @@ export default function IssuesPanel({
                   {issue.issue_title || issue.short_message || issue.message || issue.why}
                 </p>
 
-                <div className="issue-diff">
-                  <p className="issue-original">“{originalLabel(issue)}”</p>
-                  {suggestion && (
-                    <>
-                      <span className="issue-change-label">Suggested</span>
-                      <p className="issue-suggestion">“{suggestion}”</p>
-                    </>
-                  )}
-                </div>
+                {isWhitespaceFocused(issue, suggestion) ? (
+                  <WhitespaceDiff
+                    issue={issue}
+                    suggestion={suggestion}
+                    documentText={documentText}
+                  />
+                ) : (
+                  <div className="issue-diff">
+                    <p className="issue-original">“{originalLabel(issue)}”</p>
+                    {suggestion ? (
+                      <>
+                        <span className="issue-change-label">Suggested</span>
+                        <p className="issue-suggestion">“{suggestion}”</p>
+                      </>
+                    ) : null}
+                  </div>
+                )}
 
                 {issue.why && <p className="issue-why">{issue.why}</p>}
 
@@ -288,6 +356,35 @@ export default function IssuesPanel({
             );
           })}
       </ul>
+
+      {hasText && filtered.length > 0 && filtered.length <= 2 && (
+        <ul className="suggestions-mini-insights" aria-label="Quick insights">
+          {(() => {
+            const correctness = tone?.writing_scores?.grammar ?? tone?.grammar_score;
+            const clarity = tone?.writing_scores?.clarity ?? tone?.clarity_score;
+            const toneScore = tone?.writing_scores?.tone ?? tone?.professionalism_score;
+            return [
+              {
+                label: "Correctness",
+                value: correctness != null ? correctnessLabel(correctness) : "—",
+              },
+              {
+                label: "Clarity",
+                value: clarity != null ? clarityLabel(clarity) : "—",
+              },
+              {
+                label: "Tone",
+                value: toneDimensionLabel(tone?.tone, toneScore, writingMode),
+              },
+            ];
+          })().map((row) => (
+            <li key={row.label}>
+              <span>{row.label}</span>
+              <strong>{row.value}</strong>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

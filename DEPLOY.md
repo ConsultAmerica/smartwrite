@@ -4,18 +4,18 @@ Split hosting: **Vercel** serves the React UI; **Render** runs the FastAPI API.
 
 | Service | Hosts | URL example |
 |---------|--------|-------------|
-| Frontend | [Vercel](https://vercel.com) | `https://grammarly-app.vercel.app` (or your Vercel URL) |
+| Frontend | [Vercel](https://vercel.com) | `https://smartwrite-seven.vercel.app` |
 | API | [Render](https://render.com) | `https://smartwrite-api.onrender.com` |
 
 ---
 
 ## 1. GitHub repo
 
-**Repo:** https://github.com/N-sfd/grammarly-app
+**Repo:** https://github.com/N-sfd/smartwrite
 
 ```powershell
-cd "E:\projects\AI Projects\grammarly-app"
-git remote set-url origin https://github.com/N-sfd/grammarly-app.git
+cd "E:\projects\AI Projects\smartwrite"
+git remote set-url origin https://github.com/N-sfd/smartwrite.git
 git push -u origin main
 ```
 
@@ -57,7 +57,7 @@ git push -u origin main
 |------|--------|
 | `VITE_API_BASE` | `https://YOUR-API.onrender.com` (no trailing slash) |
 
-5. Deploy → copy your Vercel URL, e.g. `https://grammarly-app.vercel.app`
+5. Deploy → copy your Vercel URL, e.g. `https://smartwrite-seven.vercel.app`
 
 ---
 
@@ -68,7 +68,7 @@ In **Render** → your API service → **Environment**:
 Update `CORS_ORIGINS` to include your live Vercel URL:
 
 ```env
-CORS_ORIGINS=https://grammarly-app.vercel.app,http://localhost:5173,http://127.0.0.1:5173
+CORS_ORIGINS=https://smartwrite-seven.vercel.app,http://localhost:5173,http://127.0.0.1:5173
 ```
 
 Save → Render redeploys. Without this, the browser blocks API calls from Vercel and the UI shows “SmartWrite is temporarily unavailable.”

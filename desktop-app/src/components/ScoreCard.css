@@ -1,8 +1,13 @@
 .score-card {
-  padding: 16px 14px 12px;
-  border-bottom: 1px solid var(--border);
+  margin: 10px 10px 0;
+  padding: 12px 12px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   flex-shrink: 0;
-  background: #fff;
+  background:
+    radial-gradient(220px 100px at 100% 0%, rgba(5, 150, 105, 0.08), transparent 70%),
+    #fff;
+  box-shadow: var(--shadow-sm);
 }
 
 .score-card-head {
@@ -23,8 +28,9 @@
 
 .score-badge {
   font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
+  color: var(--accent);
+  font-weight: 650;
+  animation: pulse-soft 1.2s ease-in-out infinite;
 }
 
 .score-empty-block {
@@ -35,11 +41,13 @@
 }
 
 .score-number-empty {
-  font-size: 36px;
-  font-weight: 700;
-  letter-spacing: -0.04em;
+  font-family: var(--font);
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.045em;
   line-height: 1;
   color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
 }
 
 .score-empty {
@@ -62,11 +70,14 @@
 }
 
 .score-number {
-  font-size: 36px;
-  font-weight: 700;
-  letter-spacing: -0.04em;
+  font-family: var(--font);
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.045em;
   line-height: 1;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
+  animation: score-pop 0.35s ease both;
 }
 
 .score-denom {

@@ -1,41 +1,51 @@
-import { useId } from "react";
 import "./Logo.css";
 
 interface Props {
   size?: number;
+  /** When false, render the app icon only (collapsed rail). */
   showWordmark?: boolean;
+  /** @deprecated Tagline is no longer used in the product shell. */
+  showTagline?: boolean;
 }
 
-/** Flat product mark: stylized S with a writing underline — no sparkle. */
-export default function Logo({ size = 28, showWordmark = true }: Props) {
-  const uid = useId().replace(/:/g, "");
-  const bgId = `sw-bg-${uid}`;
+const V = "27";
 
+/**
+ * Brand system:
+ * - Expanded: SW icon | script wordmark
+ * - Collapsed: SW icon only
+ * - Favicon/app icon: SW monogram
+ * Script artwork is branding-only — never used as UI type.
+ */
+export default function Logo({
+  size = 36,
+  showWordmark = true,
+}: Props) {
   return (
-    <div className="brand-logo" aria-label="SmartWrite">
-      <svg
-        className="brand-logo-icon"
-        width={size}
-        height={size}
-        viewBox="0 0 40 40"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <defs>
-          <linearGradient id={bgId} x1="6" y1="4" x2="34" y2="36" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#0F9D8A" />
-            <stop offset="1" stopColor="#0B8F7B" />
-          </linearGradient>
-        </defs>
-        <rect width="40" height="40" rx="8" fill={`url(#${bgId})`} />
-        <path
-          d="M25.2 13.2c-.9-1.1-2.3-1.7-4-1.7-2.8 0-4.6 1.5-4.6 3.5 0 1.8 1.3 2.8 3.8 3.4l1.4.3c1.9.4 2.8 1 2.8 2.2 0 1.4-1.3 2.3-3.3 2.3-1.7 0-3-.6-3.9-1.7l-1.6 1.7c1.3 1.5 3.2 2.3 5.5 2.3 3.3 0 5.5-1.7 5.5-4.1 0-2-1.4-3.1-4-3.7l-1.4-.3c-1.7-.4-2.5-.9-2.5-1.9 0-1.1 1.1-1.9 2.8-1.9 1.3 0 2.4.5 3.1 1.4l1.4-1.8z"
-          fill="#fff"
-        />
-        <path d="M12 29.5h16" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" opacity="0.85" />
-      </svg>
-      {showWordmark && <span className="brand-logo-text">SmartWrite</span>}
+    <div
+      className={`brand-logo${showWordmark ? " has-wordmark" : " icon-only"}`}
+      aria-label="SmartWrite"
+      style={{ ["--logo-size" as string]: `${size}px` }}
+    >
+      <img
+        className="brand-app-icon"
+        src={`/images/smartwrite-mark.png?v=${V}`}
+        alt=""
+        width={showWordmark ? 36 : size}
+        height={showWordmark ? 36 : size}
+        draggable={false}
+      />
+      {showWordmark ? (
+        <>
+          <span className="brand-divider" aria-hidden="true" />
+          <img
+            className="brand-script"
+            src={`/images/smartwrite-script-wordmark.png?v=${V}`}
+            alt="SmartWrite"
+            draggable={false}
+          />
+        </>
+      ) : null}
     </div>
   );
 }

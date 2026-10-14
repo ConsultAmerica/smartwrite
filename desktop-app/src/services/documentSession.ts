@@ -159,3 +159,60 @@ export function scopesMatch(
   if (scope.end > current.text.length || scope.start > scope.end) return false;
   return current.text.slice(scope.start, scope.end) === scope.sourceText;
 }
+
+/** Prefer recovery (strictly newer) → local draft → list/server document body. */
+export function resolveOpenDocumentState(input: {
+  listTitle: string;
+  listContent: string;
+  stored?: { title: string; content: string; revision?: number } | null;
+  recovered?: { title: string; content: string; revision: number } | null;
+}): { title: string; content: string; revision: number; fromRecovery: boolean } {
+  if (input.recovered) {
+    return {
+      title: sanitizeDocumentTitle(input.recovered.title),
+      content: input.recovered.content,
+      revision: input.recovered.revision,
+      fromRecovery: true,
+    };
+  }
+  if (input.stored) {
+    return {
+      title: sanitizeDocumentTitle(input.stored.title),
+      content: input.stored.content,
+      revision: input.stored.revision ?? 0,
+      fromRecovery: false,
+    };
+  }
+  return {
+    title: sanitizeDocumentTitle(input.listTitle),
+    content: input.listContent,
+    revision: 0,
+    fromRecovery: false,
+  };
+}
+
+/**
+ * When a local draft exists for a server id, keep local title/content/updated_at.
+ * Autosave is local-first; server list must not silently overwrite newer editor text.
+ */
+export function mergeLocalPreferredDocument<T extends {
+  id: number;
+  title: string;
+  content: string;
+  updated_at: string;
+  local_id?: string;
+}>(serverDoc: T, localDoc: T | undefined): T {
+  if (!localDoc) {
+    return { ...serverDoc, title: sanitizeDocumentTitle(serverDoc.title) };
+  }
+  const localTs = Date.parse(localDoc.updated_at) || 0;
+  const serverTs = Date.parse(serverDoc.updated_at) || 0;
+  const preferLocal = localTs >= serverTs;
+  return {
+    ...serverDoc,
+    title: sanitizeDocumentTitle(preferLocal ? localDoc.title : serverDoc.title),
+    content: preferLocal ? localDoc.content : serverDoc.content,
+    updated_at: preferLocal ? localDoc.updated_at : serverDoc.updated_at,
+    local_id: localDoc.local_id ?? serverDoc.local_id,
+  };
+}

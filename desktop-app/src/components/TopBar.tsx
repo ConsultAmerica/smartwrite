@@ -80,15 +80,22 @@ export default function TopBar({
   return (
     <header className="doc-header">
       <div className="doc-header-main">
+        <div className="doc-header-shell">
         <div className="doc-header-left">
           <button
             type="button"
             className="doc-back"
-            onClick={onGoHome ?? onToggleDocs}
-            title={docsCollapsed ? "Show documents" : "Back to documents"}
-            aria-label="Back to documents"
+            onClick={() => {
+              if (docsCollapsed && onToggleDocs) {
+                onToggleDocs();
+                return;
+              }
+              (onGoHome ?? onToggleDocs)?.();
+            }}
+            title={docsCollapsed ? "Show sidebar" : "Back to documents"}
+            aria-label={docsCollapsed ? "Show sidebar" : "Back to documents"}
           >
-            ← Documents
+            {docsCollapsed ? "» Sidebar" : "← Documents"}
           </button>
           <div className="doc-title-block">
             <input
@@ -233,6 +240,7 @@ export default function TopBar({
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </header>

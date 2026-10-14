@@ -19,7 +19,7 @@ export interface EditorProps {
   hoveredIssueId: string | null;
   onIssueClick: (issue: GrammarIssue) => void;
   onIssueHover: (issueId: string | null) => void;
-  onApplyFromEditor: (issue: GrammarIssue) => void;
+  onApplyFromEditor: (issue: GrammarIssue, replacement?: string) => void;
   onIgnoreFromEditor: (issue: GrammarIssue) => void;
   onAskAgentFromEditor?: (issue: GrammarIssue) => void;
   selection: { start: number; end: number };

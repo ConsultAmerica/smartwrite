@@ -1,11 +1,11 @@
 .writing-mode-bar {
   margin-bottom: 12px;
-  animation: mode-fade-in 0.2s ease;
+  animation: mode-fade-in 0.22s ease;
 }
 
 @keyframes mode-fade-in {
   from {
-    opacity: 0.6;
+    opacity: 0.55;
     transform: translateY(-4px);
   }
   to {
@@ -20,23 +20,27 @@
   align-items: center;
   gap: 10px 14px;
   padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  background: var(--highlight);
+  border-radius: 12px;
+  border: 1px solid rgba(12, 110, 98, 0.22);
+  background:
+    radial-gradient(420px 120px at 0% 0%, rgba(12, 110, 98, 0.1), transparent 65%),
+    rgba(255, 255, 255, 0.75);
   position: relative;
   z-index: 2;
+  box-shadow: var(--shadow-sm);
 }
 
 .mode-pill {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 750;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: var(--accent);
+  letter-spacing: 0.06em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--accent-gradient);
   color: #fff;
   flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(12, 110, 98, 0.18);
 }
 
 .mode-description {
@@ -44,27 +48,34 @@
   margin: 0;
   font-size: 13px;
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .mode-sample-btn {
   font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
+  font-weight: 700;
+  padding: 7px 12px;
   border-radius: 8px;
-  border: 1px solid var(--accent);
+  border: 1px solid rgba(12, 110, 98, 0.35);
   color: var(--accent);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.8);
   flex-shrink: 0;
   cursor: pointer;
   position: relative;
   z-index: 2;
   pointer-events: auto;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease,
+    border-color 0.16s ease;
 }
 
 .mode-sample-btn:hover {
   background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
+  transform: translateY(-1px);
 }
 
 .mode-sample-btn:active {

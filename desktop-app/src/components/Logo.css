@@ -1,26 +1,89 @@
 .brand-logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
+  justify-content: flex-start;
+  gap: 0;
+  max-width: 100%;
+  min-width: 0;
+  line-height: 0;
+  -webkit-user-select: none;
   user-select: none;
+  background: transparent !important;
 }
 
-.brand-logo-icon {
-  flex-shrink: 0;
-  border-radius: 8px;
-  box-shadow: none;
+/* Shared lockup sizes — same on Home + Editor */
+.brand-app-icon {
+  display: block;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+  pointer-events: none;
+  border-radius: 9px;
 }
 
-.brand-logo-text {
-  font-size: 14px;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  line-height: 1;
+.brand-divider {
+  display: block;
+  width: 1px;
+  height: 17px; /* ~15% shorter than 20px */
+  margin: 0 14px;
+  flex: 0 0 auto;
+  align-self: center;
+  background: rgba(18, 32, 28, 0.1);
+  border-radius: 1px;
 }
 
-@media (max-width: 900px) {
-  .brand-logo-text {
-    display: none;
-  }
+/* Script wordmark — nudge up so optical mass aligns with icon center */
+.brand-script {
+  display: block;
+  width: auto;
+  height: 50px;
+  max-width: 176px;
+  object-fit: contain;
+  object-position: left center;
+  background: transparent;
+  pointer-events: none;
+  /* S descender pulls geometric center down; lift for optical match */
+  transform: translateY(-2.5px);
+}
+
+.docs-brand .brand-logo {
+  max-width: 100%;
+  overflow: visible;
+}
+
+.docs-brand .brand-app-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+
+.docs-brand .brand-divider {
+  height: 17px;
+  margin: 0 14px;
+}
+
+.docs-brand .brand-script {
+  height: 50px;
+  max-width: 176px;
+  transform: translateY(-2.5px);
+}
+
+.docs-brand-btn:hover .brand-script,
+.docs-brand-btn:hover .brand-app-icon {
+  filter: drop-shadow(0 2px 6px rgba(5, 150, 105, 0.1));
+}
+
+.docs-brand-btn:focus-visible {
+  outline: 2px solid var(--emerald, #059669);
+  outline-offset: 2px;
+}
+
+/* Collapsed — keep premium icon-only treatment exactly */
+.docs-sidebar.collapsed .docs-brand .brand-app-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
 }

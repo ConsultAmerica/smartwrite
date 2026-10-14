@@ -46,6 +46,7 @@ function TemplateCard({
     >
       <span className="templates-card-image" aria-hidden="true">
         <img src={template.image} alt="" width={320} height={140} />
+        <span className="templates-card-overlay">Preview</span>
       </span>
       <span className="templates-card-copy">
         <em className="templates-card-cat">{templateCategoryLabel(template.id, template.category)}</em>
@@ -98,18 +99,45 @@ export default function TemplatesPage({ onOpenTemplate }: Props) {
   return (
     <div className="templates-page">
       <div className="templates-page-inner">
-        <header className="templates-page-head">
-          <div className="templates-page-head-copy">
-            <h1>Templates</h1>
-            <p>Start with a structured writing format and customize it as you go.</p>
+        <header className="page-hero templates-hero">
+          <div className="page-hero-stage" aria-hidden="true">
+            <div className="page-hero-wash" />
+            <div className="templates-hero-preview">
+              <div className="tpl-hero-stack">
+                <div className="tpl-hero-card tpl-hero-card-back" />
+                <div className="tpl-hero-card tpl-hero-card-front">
+                  <span className="tpl-hero-cat">Email</span>
+                  <strong>Follow-up note</strong>
+                  <span className="tpl-hero-fields">
+                    <span className="filled" />
+                    <span className="highlight" />
+                    <span />
+                  </span>
+                </div>
+              </div>
+              <div className="tpl-hero-cue">Edit · Accept</div>
+              <div className="tpl-hero-search-chip">
+                <span className="tpl-hero-search-icon" />
+                Search templates
+              </div>
+            </div>
           </div>
-          <input
-            className="templates-page-search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search templates…"
-            aria-label="Search templates"
-          />
+          <div className="page-hero-copy">
+            <p className="page-eyebrow">Templates</p>
+            <h1>Templates</h1>
+            <p className="page-lead">
+              Start with a structured writing format and customize it as you go.
+            </p>
+            <div className="page-hero-actions">
+              <input
+                className="templates-page-search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search templates…"
+                aria-label="Search templates"
+              />
+            </div>
+          </div>
         </header>
 
         <div className="templates-page-filters" role="tablist" aria-label="Template categories">

@@ -7,6 +7,7 @@ import EmptyState from "./components/EmptyState";
 import HomeDashboard from "./components/HomeDashboard";
 import DocumentsPage from "./components/DocumentsPage";
 import TemplatesPage from "./components/TemplatesPage";
+import WorkspaceGuide from "./components/WorkspaceGuide";
 import ServiceNotice from "./components/ServiceNotice";
 import RewriteErrorDialog from "./components/RewriteErrorDialog";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -30,6 +31,8 @@ import {
   resolveIssueRange,
 } from "./utils/issueFingerprint";
 import {
+  mergeLocalPreferredDocument,
+  resolveOpenDocumentState,
   restoreRecoveryIfNewer,
   scopesMatch,
   writeRecoverySnapshot,
@@ -330,23 +333,27 @@ export default function App() {
   const handleUndo = useCallback(() => {
     if (!canUndo) return;
     undo();
+    contentRevisionRef.current += 1;
     markUnsaved();
     notePossibleUndo(localDraftIdRef.current, contentRevisionRef.current);
     setAiPreview(null);
     setParagraphPreview(null);
     setPreviewRange(null);
     setActiveIssueId(null);
+    setTone(null);
     grammarRequestId.current += 1;
   }, [canUndo, undo, markUnsaved]);
 
   const handleRedo = useCallback(() => {
     if (!canRedo) return;
     redo();
+    contentRevisionRef.current += 1;
     markUnsaved();
     setAiPreview(null);
     setParagraphPreview(null);
     setPreviewRange(null);
     setActiveIssueId(null);
+    setTone(null);
     grammarRequestId.current += 1;
   }, [canRedo, redo, markUnsaved]);
 
@@ -404,11 +411,7 @@ export default function App() {
       const merged = new Map(localDocuments.map((doc) => [doc.id, doc]));
       for (const document of serverDocuments) {
         const cached = localDocuments.find((doc) => doc.id === document.id);
-        merged.set(document.id, {
-          ...document,
-          title: sanitizeDocumentTitle(document.title),
-          local_id: cached?.local_id,
-        });
+        merged.set(document.id, mergeLocalPreferredDocument(document, cached));
       }
       setDocuments(finalize([...merged.values()]));
     } catch {
@@ -741,8 +744,7 @@ export default function App() {
       return;
     }
     const fp = issueFingerprint(issue);
-    const nextIgnored = new Set(ignoredFingerprints).add(fp);
-    setIgnoredFingerprints(nextIgnored);
+    // Accept removes from the live list only — not permanent dismiss — so Undo + reanalyze can restore it.
     setIssues((prev) => prev.filter((i) => i.id !== issue.id && issueFingerprint(i) !== fp));
     setText(next);
     setActiveIssueId(null);
@@ -755,8 +757,6 @@ export default function App() {
     );
     setFeedbackTarget("suggestion");
     setFeedbackKey(`sug-${issue.id}-${Date.now()}`);
-    const activeKey = { id: activeDocumentId ?? 0, local_id: localDraftIdRef.current };
-    patchDocumentMeta(activeKey, { dismissed: [...nextIgnored] });
     await runGrammarCheck({ silent: true });
   };
 
@@ -1026,6 +1026,34 @@ export default function App() {
 
   const handleInsertBelow = () => {
     if (!aiPreview) return;
+    const scope = rewriteScopeRef.current;
+    if (scope) {
+      const ok = scopesMatch(scope, {
+        documentKey: localDraftIdRef.current,
+        revision: contentRevisionRef.current,
+        text: textRef.current,
+      });
+      if (!ok) {
+        staleRewriteRef.current = { improved: aiPreview.improved, label: aiPreview.label };
+        setConfirmState({
+          title: "This text changed while SmartWrite was preparing the rewrite.",
+          message: "Your current document was not overwritten. Insert the rewrite as new text, or cancel.",
+          confirmLabel: "Insert as new text",
+          onConfirm: () => {
+            const pending = staleRewriteRef.current;
+            setConfirmState(null);
+            if (!pending) return;
+            setText(`${textRef.current.trimEnd()}\n\n${pending.improved}`);
+            setAiPreview(null);
+            setPreviewRange(null);
+            rewriteScopeRef.current = null;
+            staleRewriteRef.current = null;
+            void runGrammarCheck({ silent: true });
+          },
+        });
+        return;
+      }
+    }
     const range = previewRange;
     if (range && range.end > range.start) {
       const insert = `${textRef.current.slice(range.start, range.end)}\n\n${aiPreview.improved}`;
@@ -1051,8 +1079,22 @@ export default function App() {
   };
 
   const handleAgentApply = (original: string, rewrite: string, label: string) => {
+    const range = selection.end > selection.start ? selection : null;
+    const start = range?.start ?? 0;
+    const end = range?.end ?? textRef.current.length;
+    const sourceText = range
+      ? textRef.current.slice(start, end)
+      : textRef.current;
+    rewriteScopeRef.current = {
+      requestId: `agent-${Date.now()}`,
+      documentKey: localDraftIdRef.current,
+      revision: contentRevisionRef.current,
+      start,
+      end,
+      sourceText,
+    };
     setAiPreview({ original, improved: rewrite, label, kind: "rewrite" });
-    setPreviewRange(selection.end > selection.start ? selection : null);
+    setPreviewRange(range);
     showToast(`${label} ready — review in Before & After`, "success");
   };
 
@@ -1338,18 +1380,21 @@ export default function App() {
   ) => {
     flushPendingSave();
     cancelInFlightRewrite();
+    const goals = options?.goals ?? PRESET_GOALS[mode];
     setWritingMode(mode);
     writingModeRef.current = mode;
-    setWritingGoals(options?.goals ?? PRESET_GOALS[mode]);
+    setWritingGoals(goals);
     setDocId(null);
     setActiveDocumentId(null);
     const nextLocal = `local-${Date.now()}`;
     setLocalDraftId(nextLocal);
     localDraftIdRef.current = nextLocal;
+    contentRevisionRef.current = 0;
     setDocTitle(sanitizeDocumentTitle(title));
     resetText(content);
     textRef.current = content;
     setIgnoredFingerprints(new Set());
+    patchDocumentMeta({ id: 0, local_id: nextLocal }, { goals, writing_mode: mode });
     if (options?.seedDemoIssues && content === DEMO_INLINE_TEXT) {
       setIssues(DEMO_INLINE_ISSUES);
       setTone(DEMO_INLINE_TONE);
@@ -1409,17 +1454,19 @@ export default function App() {
     const stored = getLocalDraft(nextLocal);
     const draftRev = stored?.revision ?? 0;
     const recovered = restoreRecoveryIfNewer(nextLocal, draftRev);
-    const openContent = recovered?.content ?? document.content;
-    const openTitle = recovered
-      ? sanitizeDocumentTitle(recovered.title)
-      : sanitizeDocumentTitle(document.title);
-    contentRevisionRef.current = recovered?.revision ?? draftRev;
-    setDocTitle(openTitle);
-    resetText(openContent);
-    textRef.current = openContent;
-    hasUnsavedChangesRef.current = Boolean(recovered);
-    setSaveStatus(recovered ? "unsaved" : "saved");
-    if (recovered) {
+    const opened = resolveOpenDocumentState({
+      listTitle: document.title,
+      listContent: document.content,
+      stored,
+      recovered,
+    });
+    contentRevisionRef.current = opened.revision;
+    setDocTitle(opened.title);
+    resetText(opened.content);
+    textRef.current = opened.content;
+    hasUnsavedChangesRef.current = opened.fromRecovery;
+    setSaveStatus(opened.fromRecovery ? "unsaved" : "saved");
+    if (opened.fromRecovery && recovered) {
       const recoverMeta = createAsyncOpMeta(nextLocal, recovered.revision);
       trackMetric("recovery_restore", { meta: recoverMeta });
       trackBetaFromMeta("recovery_restored", recoverMeta);
@@ -1428,7 +1475,7 @@ export default function App() {
     trackBetaEvent("document_opened", {
       documentKeyHash: hashDocumentKey(nextLocal),
       clientRevision: contentRevisionRef.current,
-      wordCountBucket: wordCountBucket(getTextStats(openContent).words),
+      wordCountBucket: wordCountBucket(getTextStats(opened.content).words),
     });
     setIssues([]);
     const meta = getDocumentMeta(document);
@@ -1448,7 +1495,7 @@ export default function App() {
     setEditorSessionKey((key) => key + 1);
     setWorkspaceView("editor");
     setSidebarNav("documents");
-    if (document.content.trim()) {
+    if (opened.content.trim()) {
       void runGrammarCheck({
         silent: true,
         mode: writingModeRef.current,
@@ -1629,7 +1676,7 @@ export default function App() {
   const insightsPanelProps = {
     tone,
     checking,
-    toneRefreshing,
+    toneRefreshing: toneRefreshing || autoChecking,
     issues: visibleIssues,
     activeIssueId,
     writingMode,
@@ -1729,7 +1776,7 @@ export default function App() {
           }}
           onDelete={handleDeleteDocument}
           onClose={() => setMobileDocumentsOpen(false)}
-          onCollapse={() => setDocumentsCollapsed(true)}
+          onCollapse={() => setDocumentsCollapsed((collapsed) => !collapsed)}
           onNavigate={handleSidebarNavigate}
         />
 
@@ -1786,8 +1833,11 @@ export default function App() {
                   hoveredIssueId={hoveredIssueId}
                   onIssueClick={handleSelectIssue}
                   onIssueHover={setHoveredIssueId}
-                  onApplyFromEditor={(issue) =>
-                    handleApplyIssue(issue, issue.suggestion || issue.replacements[0] || "")
+                  onApplyFromEditor={(issue, replacement) =>
+                    handleApplyIssue(
+                      issue,
+                      replacement || issue.suggestion || issue.replacements[0] || ""
+                    )
                   }
                   onIgnoreFromEditor={handleIgnoreIssue}
                   onAskAgentFromEditor={handleAskAgentFromEditor}
@@ -1805,8 +1855,13 @@ export default function App() {
                   emptyOverlay={
                     <EmptyState
                       variant="hero"
-                      title="Start writing"
-                      message="Type or paste text to begin."
+                      title="Check writing instantly"
+                      message="Paste a draft or start typing — color-coded suggestions appear as you write."
+                      onPasteText={(pasted) => {
+                        setText(pasted);
+                        editorRef.current?.focusEditor();
+                      }}
+                      onFocusEditor={() => editorRef.current?.focusEditor()}
                       onStart={() => {
                         openEditorDocument(
                           "Inline suggestions demo",
@@ -1824,6 +1879,18 @@ export default function App() {
             </main>
           )}
         </div>
+
+        {showBrowse && (
+          <WorkspaceGuide
+            onNew={handleNewDoc}
+            onBrowseTemplates={() => handleSidebarNavigate("templates")}
+            onTryDemo={() => {
+              openEditorDocument("Inline suggestions demo", DEMO_INLINE_TEXT, "general", {
+                seedDemoIssues: true,
+              });
+            }}
+          />
+        )}
 
         {showEditor && !insightsCollapsed && (
           <PanelErrorBoundary

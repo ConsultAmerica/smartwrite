@@ -75,6 +75,27 @@ function readabilityLabel(score: number | null | undefined, avgLen: number): str
   return "Dense";
 }
 
+function pacingLabel(avgLen: number): { label: string; hint: string; pct: number } {
+  if (!avgLen) return { label: "—", hint: "Write more to measure pacing.", pct: 0 };
+  if (avgLen <= 12) return { label: "Brisk", hint: "Short sentences keep a fast pace.", pct: 82 };
+  if (avgLen <= 18) return { label: "Steady", hint: "Balanced rhythm for most readers.", pct: 70 };
+  if (avgLen <= 24) return { label: "Measured", hint: "A bit dense — break up longer lines.", pct: 48 };
+  return { label: "Heavy", hint: "Long sentences slow readers down.", pct: 28 };
+}
+
+function repetitionStats(text: string): { label: string; hint: string; pct: number } {
+  const tokens = text.toLowerCase().match(/[a-z']+/g) ?? [];
+  if (tokens.length < 8) {
+    return { label: "—", hint: "Need a bit more text to judge repetition.", pct: 0 };
+  }
+  const unique = new Set(tokens).size;
+  const ratio = unique / tokens.length;
+  const pct = Math.round(Math.min(100, ratio * 120));
+  if (ratio > 0.72) return { label: "Varied", hint: "Word choice looks fresh.", pct };
+  if (ratio > 0.5) return { label: "Balanced", hint: "Some reuse — normal for drafts.", pct };
+  return { label: "Repetitive", hint: "Try swapping repeated words for variety.", pct };
+}
+
 function InsightsMetrics({
   tone,
   text,
@@ -91,35 +112,58 @@ function InsightsMetrics({
   const hasText = text.trim().length > 0;
   const avgLen = avgSentenceLength(stats.words, stats.sentences);
   const toneName = toneDimensionLabel(tone?.tone, scores?.tone ?? tone?.professionalism_score, writingMode);
+  const pacing = pacingLabel(avgLen);
+  const repetition = repetitionStats(text);
+  const readLabel = readabilityLabel(scores?.readability, avgLen);
 
   if (!hasText) {
     return (
       <div className="insights-metrics">
-        <p className="insights-empty-note">Insights appear once you start writing.</p>
+        <p className="insights-empty-note">
+          Paste or type anything to see readability, pacing, and repetition — no account needed.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="insights-metrics">
-      <section className="insights-block">
-        <h4>Document</h4>
-        <ul className="insights-kv">
-          <li>
-            <span>{formatWordCount(stats.words)}</span>
-          </li>
-          <li>
-            <span>{stats.sentences} sentences</span>
-          </li>
-          <li>
-            <span>{stats.readingLabel} read</span>
-          </li>
-        </ul>
+      <section className="insights-report-hero">
+        <p className="insights-report-kicker">Writing report</p>
+        <strong>{readLabel}</strong>
+        <span>
+          {formatWordCount(stats.words)} · {stats.sentences} sentences · {stats.readingLabel} read
+        </span>
       </section>
 
       <section className="insights-block">
         <h4>Readability</h4>
-        <p>{readabilityLabel(scores?.readability, avgLen)}</p>
+        <p>{readLabel}</p>
+        <p className="insights-hint">
+          Avg sentence: {avgLen > 0 ? `${avgLen} words` : "—"}
+        </p>
+      </section>
+
+      <section className="insights-block">
+        <h4>Pacing</h4>
+        <div className="insights-meter-row">
+          <strong>{pacing.label}</strong>
+          <div className="insights-mini-bar" aria-hidden="true">
+            <span style={{ width: `${pacing.pct}%` }} />
+          </div>
+        </div>
+        <p className="insights-hint">{pacing.hint}</p>
+      </section>
+
+      <section className="insights-block">
+        <h4>Repetition</h4>
+        <div className="insights-meter-row">
+          <strong>{repetition.label}</strong>
+          <div className="insights-mini-bar" aria-hidden="true">
+            <span style={{ width: `${repetition.pct}%` }} />
+          </div>
+        </div>
+        <p className="insights-hint">{repetition.hint}</p>
       </section>
 
       <section className="insights-block">
@@ -127,15 +171,6 @@ function InsightsMetrics({
         <p>
           {toneName}
           {tone?.tone && toneName !== tone.tone ? ` · ${tone.tone}` : ""}
-        </p>
-      </section>
-
-      <section className="insights-block">
-        <h4>Sentence length</h4>
-        <p>
-          {avgLen > 0
-            ? `${avgLen} ${avgLen === 1 ? "word" : "words"} average`
-            : "—"}
         </p>
       </section>
 
@@ -204,9 +239,14 @@ function InsightsMetrics({
                 {row.display}
               </span>
               {row.value != null && (
-                <span className="insights-dots" aria-hidden="true">
-                  {scoreDots(row.value)}
-                </span>
+                <>
+                  <span className="insights-dots" aria-hidden="true">
+                    {scoreDots(row.value)}
+                  </span>
+                  <div className="insights-mini-bar" aria-hidden="true">
+                    <span style={{ width: `${Math.max(8, Math.min(100, row.value))}%` }} />
+                  </div>
+                </>
               )}
             </li>
           ))}
@@ -303,6 +343,7 @@ export default function InsightsPanel({
             writingMode={writingMode}
             tone={tone}
             hasText={hasText}
+            documentText={text}
             onSelect={onSelectIssue}
             onApply={onApplyIssue}
             onIgnore={onIgnoreIssue}

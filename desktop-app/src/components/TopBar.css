@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
   padding-top: env(safe-area-inset-top);
   overflow: visible;
   z-index: 20;
@@ -12,11 +12,20 @@
 
 .doc-header-main {
   display: flex;
+  justify-content: center;
+  min-height: 64px;
+  padding: 12px 14px; /* match .editor-canvas horizontal padding */
+}
+
+.doc-header-shell {
+  width: 100%;
+  max-width: 800px; /* match .writing-editor */
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 64px;
-  padding: 12px 20px;
+  /* match editor text inset (56px) so title lines up with canvas content */
+  padding: 0 56px;
 }
 
 .doc-header-left {
@@ -25,6 +34,8 @@
   gap: 12px;
   min-width: 0;
   flex: 1;
+  /* pull back control into the left gutter so the title starts with the text */
+  margin-left: -44px;
 }
 
 .doc-back {
@@ -59,9 +70,10 @@
   padding: 0;
   border: none;
   background: transparent;
-  font-size: 20px;
-  font-weight: 650;
-  letter-spacing: -0.025em;
+  font-family: var(--font);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   line-height: 1.25;
   color: var(--text);
 }
@@ -116,14 +128,15 @@
 }
 
 .doc-action.primary {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: transparent;
+  background: var(--accent-gradient);
   color: #fff;
+  box-shadow: 0 6px 14px rgba(6, 78, 59, 0.16);
 }
 
 .doc-action.primary:hover:not(:disabled) {
   background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  border-color: transparent;
   color: #fff;
 }
 
@@ -216,6 +229,14 @@
     padding: 10px 12px;
   }
 
+  .doc-header-shell {
+    padding: 0 16px;
+  }
+
+  .doc-header-left {
+    margin-left: 0;
+  }
+
   .doc-back {
     width: 36px;
     height: 36px;
@@ -229,6 +250,6 @@
   }
 
   .doc-title-input {
-    font-size: 18px;
+    font-size: 1.05rem;
   }
 }

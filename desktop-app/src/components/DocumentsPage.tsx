@@ -108,22 +108,46 @@ export default function DocumentsPage({
   return (
     <div className="documents-page">
       <div className="documents-page-inner">
-        <header className="documents-page-head">
-          <div>
-            <h1>Documents</h1>
-            <p>Find, organize, and continue your writing.</p>
+        <header className="page-hero documents-hero">
+          <div className="page-hero-stage" aria-hidden="true">
+            <div className="page-hero-wash" />
+            <div className="documents-hero-preview">
+              <div className="docs-hero-stack">
+                <div className="docs-hero-card docs-hero-card-back" />
+                <div className="docs-hero-card docs-hero-card-mid" />
+                <div className="docs-hero-card docs-hero-card-front">
+                  <span className="docs-hero-icon" />
+                  <span className="docs-hero-lines">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  <span className="docs-hero-badge">Saved</span>
+                </div>
+              </div>
+              <div className="docs-hero-search-chip">
+                <span className="docs-hero-search-icon" />
+                Search documents
+              </div>
+              <div className="docs-hero-folder">Folders</div>
+            </div>
           </div>
-          <div className="documents-page-head-actions">
-            <input
-              className="documents-page-search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search documents…"
-              aria-label="Search documents"
-            />
-            <button type="button" className="documents-page-new" onClick={onNew}>
-              + New document
-            </button>
+          <div className="page-hero-copy">
+            <p className="page-eyebrow">Documents</p>
+            <h1>Documents</h1>
+            <p className="page-lead">Find, organize, and continue your writing.</p>
+            <div className="page-hero-actions">
+              <input
+                className="documents-page-search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search documents…"
+                aria-label="Search documents"
+              />
+              <button type="button" className="documents-page-new interactive-press" onClick={onNew}>
+                New document
+              </button>
+            </div>
           </div>
         </header>
 
@@ -233,7 +257,11 @@ export default function DocumentsPage({
                           </strong>
                         )}
                       </span>
-                      <span className="documents-page-type">{meta.typeLabel}</span>
+                      <span
+                        className={`documents-page-type type-${meta.typeLabel.toLowerCase()}`}
+                      >
+                        {meta.typeLabel}
+                      </span>
                       <span className="documents-page-updated">{meta.edited}</span>
                       <span className="documents-page-words">{meta.words}</span>
                     </button>

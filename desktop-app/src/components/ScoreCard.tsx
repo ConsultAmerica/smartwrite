@@ -21,15 +21,15 @@ export default function ScoreCard({
   hasText = false,
   wordCount = 0,
 }: Props) {
-  const enoughContent = hasText && wordCount >= 20;
-  const raw = enoughContent ? tone?.writing_scores?.overall ?? tone?.grammar_score ?? null : null;
+  const shortDraft = hasText && wordCount > 0 && wordCount < 12;
+  const raw = hasText ? tone?.writing_scores?.overall ?? tone?.grammar_score ?? null : null;
   const nextScore = raw != null ? clampDisplayScore(raw, issueCount) : null;
 
   const [displayScore, setDisplayScore] = useState<number | null>(null);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    if (!hasText || !enoughContent) {
+    if (!hasText) {
       setDisplayScore(null);
       setUpdating(false);
       return;
@@ -39,39 +39,47 @@ export default function ScoreCard({
       return;
     }
     if (nextScore == null) {
-      setUpdating(Boolean(hasText && checking));
+      // Waiting for first analysis, or analysis failed — never stick on Analyzing forever
+      setUpdating(false);
       return;
     }
     setUpdating(true);
     const id = window.setTimeout(() => {
       setDisplayScore(nextScore);
       setUpdating(false);
-    }, 750);
+    }, 400);
     return () => window.clearTimeout(id);
-  }, [checking, nextScore, hasText, enoughContent]);
+  }, [checking, nextScore, hasText]);
 
   const level = displayScore != null ? scoreLevel(displayScore) : null;
-  const showUpdating = enoughContent && (checking || updating);
-  const shortDraft = hasText && !enoughContent;
+  const analyzing = hasText && Boolean(checking || updating);
+  const emptyMessage = !hasText
+    ? "Start writing to see your score."
+    : shortDraft || checking
+      ? "Analyzing as you write…"
+      : "Score will update after analysis.";
 
   return (
     <section className={`score-card${compact ? " compact" : ""}`}>
       <div className="score-card-head">
         <h3>Writing score</h3>
-        {showUpdating && <span className="score-badge">Updating…</span>}
+        {analyzing && displayScore == null && (
+          <span className="score-badge" role="status" aria-live="polite">
+            Analyzing…
+          </span>
+        )}
+        {analyzing && displayScore != null && (
+          <span className="score-badge" role="status" aria-live="polite">
+            Updating…
+          </span>
+        )}
       </div>
       {displayScore == null ? (
         <div className="score-empty-block">
           <span className="score-number score-number-empty" aria-hidden="true">
             —
           </span>
-          <p className="score-empty">
-            {!hasText
-              ? "Start writing to see your score."
-              : shortDraft
-                ? "Analyzing as you write…"
-                : "Start writing to see your score."}
-          </p>
+          <p className="score-empty">{emptyMessage}</p>
         </div>
       ) : (
         <div className="score-hero">

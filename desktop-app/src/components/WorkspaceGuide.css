@@ -1,0 +1,361 @@
+.workspace-guide {
+  width: 280px;
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  max-height: 100%;
+  padding: 16px 12px 16px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-panel);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: fade-up 0.4s ease both;
+}
+
+.guide-header {
+  flex-shrink: 0;
+  padding: 2px 2px 0;
+}
+
+.guide-header h2 {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.guide-header p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-subtle);
+}
+
+.guide-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.guide-live {
+  padding: 10px 11px 8px;
+}
+
+.guide-live-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.guide-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--emerald);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.16);
+  animation: guide-pulse 2s ease-in-out infinite;
+}
+
+.guide-live-head strong {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.guide-health {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.guide-health li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.guide-health em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--forest);
+  background: var(--mint);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.guide-section {
+  flex-shrink: 0;
+}
+
+.guide-section h3 {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--neutral);
+}
+
+.guide-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.guide-step {
+  width: 100%;
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 7px 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.guide-step:hover {
+  background: var(--bg-hover);
+}
+
+.guide-step-icon {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--mint);
+  color: var(--forest);
+}
+
+.guide-step-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.guide-step-copy strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.guide-step-copy span {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.guide-example {
+  padding: 11px 12px 10px;
+}
+
+.guide-example-text {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 550;
+  color: var(--text);
+}
+
+.guide-u {
+  font-weight: 650;
+  text-underline-offset: 3px;
+}
+
+.guide-u.grammar {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--highlight-grammar);
+}
+
+.guide-u.clarity {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--highlight-clarity);
+}
+
+.guide-example-key {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.guide-example-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--text-muted);
+}
+
+.guide-example-key li::before {
+  content: "";
+  width: 12px;
+  flex: 0 0 12px;
+  height: 0;
+  border-bottom-width: 2px;
+  border-bottom-style: solid;
+}
+
+.guide-example-key .grammar::before {
+  border-bottom-color: var(--highlight-grammar);
+  border-bottom-style: wavy;
+}
+
+.guide-example-key .clarity::before {
+  border-bottom-color: var(--highlight-clarity);
+}
+
+.guide-colors {
+  margin-top: 0;
+}
+
+.guide-key {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+}
+
+.guide-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--text-muted);
+}
+
+.guide-key li::before {
+  content: "";
+  width: 14px;
+  flex: 0 0 14px;
+  height: 0;
+  border-bottom-width: 2px;
+  border-bottom-style: solid;
+}
+
+.guide-key .grammar::before {
+  border-bottom-color: var(--highlight-grammar);
+  border-bottom-style: wavy;
+  border-bottom-width: 2.5px;
+}
+
+.guide-key .clarity::before {
+  border-bottom-color: var(--highlight-clarity);
+}
+
+.guide-key .tone::before {
+  border-bottom-color: var(--highlight-tone);
+  border-bottom-style: double;
+  border-bottom-width: 3px;
+}
+
+.guide-key .style::before {
+  border-bottom-color: var(--highlight-engagement);
+  border-bottom-style: dotted;
+  border-bottom-width: 3px;
+}
+
+.guide-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  margin-top: 2px;
+  padding: 12px 12px;
+  border: 1px solid rgba(5, 150, 105, 0.28);
+  border-radius: 10px;
+  background:
+    radial-gradient(180px 80px at 100% 0%, rgba(5, 150, 105, 0.14), transparent 70%),
+    #fff;
+  color: var(--forest);
+  text-align: left;
+  font-weight: 750;
+  font-size: 13px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  flex-shrink: 0;
+}
+
+.guide-demo small {
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--text-muted);
+}
+
+.guide-demo:hover {
+  border-color: rgba(5, 150, 105, 0.5);
+  box-shadow: 0 8px 18px rgba(18, 32, 28, 0.08);
+  transform: translateY(-1px);
+}
+
+.guide-browse {
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+
+.guide-browse:hover {
+  color: var(--forest);
+  background: var(--bg-hover);
+}
+
+@keyframes guide-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.14); }
+  50% { box-shadow: 0 0 0 5px rgba(5, 150, 105, 0.08); }
+}
+
+@media (max-width: 1200px) {
+  .workspace-guide {
+    width: 260px;
+    flex-basis: 260px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .workspace-guide {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-live-dot {
+    animation: none;
+  }
+}

@@ -2,6 +2,21 @@
 const JUNK_TITLE =
   /^(via\s*proxy|proxy|null|undefined|nan|test|asdf|xxx+|lorem\s*ipsum)$/i;
 
+/** RC / smoke / CI docs — hide from Recent for beta users. */
+const SYSTEM_DOC_TITLE =
+  /^(RC\d+\b|.*\bsmoke\b|\b(qa|ci|e2e|debug|fixture)\b)/i;
+const ISO_STAMP_IN_TITLE = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+export function isSystemOrTestDocumentTitle(
+  title: string | null | undefined
+): boolean {
+  const cleaned = (title ?? "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return false;
+  if (SYSTEM_DOC_TITLE.test(cleaned)) return true;
+  if (ISO_STAMP_IN_TITLE.test(cleaned)) return true;
+  return false;
+}
+
 export function sanitizeDocumentTitle(title: string | null | undefined): string {
   const cleaned = (title ?? "").replace(/\s+/g, " ").trim();
   if (!cleaned) return "Untitled";

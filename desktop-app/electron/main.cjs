@@ -42,6 +42,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     title: "SmartWrite AI",
+    icon: path.join(__dirname, "../public/images/smartwrite-mark.png"),
     backgroundColor: "#0f1419",
     show: false,
     webPreferences: {

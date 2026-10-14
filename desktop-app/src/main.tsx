@@ -5,6 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { installBetaAnalyticsBridge } from "./services/betaAnalytics";
 import { installTelemetryBridge } from "./services/telemetry";
 import "./styles/global.css";
+import "./styles/interactions.css";
 
 installTelemetryBridge();
 installBetaAnalyticsBridge();

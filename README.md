@@ -38,7 +38,7 @@ Click **Check Grammar** to see issues, use **Apply** / **Ignore** per card, or *
 ## Architecture
 
 ```
-grammarly-app/
+smartwrite/
 ├── backend/           # FastAPI (grammar, rewrite, tone, SQLite)
 ├── desktop-app/       # Electron + React + Vite
 ├── database/          # app.db (created at runtime)

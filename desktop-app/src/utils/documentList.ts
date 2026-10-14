@@ -1,12 +1,11 @@
 import type { Document } from "../types";
 import {
   formatRelativeTime,
-  formatShortDate,
   formatWordCount,
   getTextStats,
   inferDocumentTypeLabel,
 } from "./textStats";
-import { sanitizeDocumentTitle } from "./title";
+import { isSystemOrTestDocumentTitle, sanitizeDocumentTitle } from "./title";
 
 export function titleCounts(documents: Document[]): Record<string, number> {
   return documents.reduce<Record<string, number>>((acc, doc) => {
@@ -16,14 +15,21 @@ export function titleCounts(documents: Document[]): Record<string, number> {
   }, {});
 }
 
+/** Recent lists for home/sidebar — exclude smoke/RC/CI noise. */
+export function userFacingDocuments(documents: Document[]): Document[] {
+  return documents.filter((doc) => !isSystemOrTestDocumentTitle(doc.title));
+}
+
+/** Strip trailing date stamps that duplicate the meta line under the title. */
+const TRAILING_DATE =
+  /\s*[·•|–-]\s*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2}(?:T[\d:.]+Z?)?)\s*$/i;
+
 export function documentDisplayTitle(
   doc: Document,
-  counts: Record<string, number>
+  _counts?: Record<string, number>
 ): string {
-  const title = sanitizeDocumentTitle(doc.title);
-  if ((counts[title] ?? 0) <= 1) return title;
-  const date = formatShortDate(doc.updated_at);
-  return date ? `${title} · ${date}` : title;
+  const title = sanitizeDocumentTitle(doc.title).replace(TRAILING_DATE, "").trim();
+  return title || "Untitled";
 }
 
 export function documentRowMeta(doc: Document): {
@@ -51,6 +57,18 @@ export type DocumentTypeFilter =
   | "career"
   | "academic";
 
+function allowSystemDocuments(): boolean {
+  try {
+    return (
+      Boolean(import.meta.env.DEV) &&
+      typeof localStorage !== "undefined" &&
+      localStorage.getItem("smartwrite-show-system-docs") === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function filterAndSortDocuments(
   documents: Document[],
   options: {
@@ -60,7 +78,7 @@ export function filterAndSortDocuments(
   }
 ): Document[] {
   const q = options.query.trim().toLowerCase();
-  let list = [...documents];
+  let list = allowSystemDocuments() ? [...documents] : userFacingDocuments(documents);
 
   if (options.filter === "trash") {
     list = list.filter((doc) => doc.trashed);

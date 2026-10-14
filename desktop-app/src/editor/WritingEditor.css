@@ -4,19 +4,79 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  background: var(--bg-editor);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #fff;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.editor-legend {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 5px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(245, 250, 247, 0.72);
+  z-index: 3;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 550;
+  color: var(--neutral);
+  opacity: 0.88;
+}
+
+.legend-item::before {
+  content: "";
+  width: 12px;
+  height: 0;
+  border-bottom-width: 2px;
+  border-bottom-style: solid;
+  opacity: 0.9;
+}
+
+.legend-correctness::before {
+  border-bottom-color: var(--highlight-grammar);
+  border-bottom-style: wavy;
+  height: 3px;
+}
+
+.legend-clarity::before {
+  border-bottom-color: var(--highlight-clarity);
+}
+
+.legend-tone::before {
+  border-bottom-color: var(--highlight-tone);
+  border-bottom-style: double;
+  height: 4px;
+}
+
+.legend-style::before {
+  border-bottom-color: var(--highlight-engagement);
+  border-bottom-style: dotted;
+}
+
+.editor-surface {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-backdrop,
 .editor-textarea {
   flex: 1;
   min-height: 0;
-  padding: 48px 56px 24px;
-  font-size: 17px;
-  line-height: 1.7;
+  padding: 36px 56px 24px;
+  font-size: var(--type-editor);
+  line-height: 1.75;
   font-family: var(--font);
   font-weight: 400;
   white-space: pre-wrap;
@@ -26,30 +86,46 @@
 
 .editor-backdrop {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 36px;
+  inset: 0;
   pointer-events: none;
   color: transparent;
   z-index: 1;
 }
 
 .editor-backdrop .issue-mark {
-  pointer-events: auto;
-  cursor: pointer;
   color: transparent;
-  text-decoration: underline solid var(--mark-color);
-  text-decoration-thickness: 1.5px;
+  background: transparent;
+  text-decoration-line: underline;
+  text-decoration-color: var(--mark-color);
+  text-decoration-thickness: 2px;
   text-underline-offset: 3px;
   text-decoration-skip-ink: none;
-  transition: background 0.12s;
+  border-radius: 2px;
+  transition: background 0.12s ease;
+}
+
+.editor-backdrop .issue-mark.mark-wavy {
+  text-decoration-style: wavy;
+  text-decoration-thickness: 1.5px;
+}
+
+.editor-backdrop .issue-mark.mark-solid {
+  text-decoration-style: solid;
+}
+
+.editor-backdrop .issue-mark.mark-double {
+  text-decoration-style: double;
+  text-decoration-thickness: 1.5px;
+}
+
+.editor-backdrop .issue-mark.mark-dotted {
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2.5px;
 }
 
 .editor-backdrop .issue-mark.hovered,
 .editor-backdrop .issue-mark.active {
-  background: color-mix(in srgb, var(--mark-color) 12%, transparent);
-  border-radius: 2px;
+  background: color-mix(in srgb, var(--mark-color) 14%, transparent);
 }
 
 .editor-textarea {
@@ -62,21 +138,21 @@
   outline: none;
   background: transparent;
   color: var(--text);
-  caret-color: #374151;
+  caret-color: #1f2937;
 }
 
 .editor-textarea:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: none;
 }
 
 .editor-textarea::placeholder {
-  color: transparent;
+  color: var(--text-subtle);
+  opacity: 0.85;
 }
 
 .editor-empty-overlay {
   position: absolute;
-  inset: 36px 48px 48px;
+  inset: 24px 32px 32px;
   z-index: 4;
   display: flex;
   align-items: center;
@@ -86,70 +162,31 @@
 
 .editor-empty-overlay .empty-state {
   pointer-events: auto;
-  max-width: 420px;
-}
-
-.issue-popup {
-  position: absolute;
-  z-index: 10;
-  min-width: 200px;
-  max-width: 300px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: #fff;
-  border: 1px solid var(--border);
-  box-shadow: 0 8px 28px rgba(17, 24, 39, 0.12);
-}
-
-.issue-popup .popup-label {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
-
-.issue-popup strong {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  line-height: 1.35;
-}
-
-.issue-popup .arrow {
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-.popup-apply {
-  width: 100%;
-  padding: 7px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
+  max-width: 440px;
 }
 
 .editor-footer {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 8px 20px;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-subtle);
   border-top: 1px solid var(--border);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.92);
   z-index: 3;
 }
 
 .editor-footer .sep {
   opacity: 0.35;
+}
+
+.footer-issues {
+  color: var(--accent);
+  font-weight: 650;
 }
 
 .save-status.saved {
@@ -165,12 +202,17 @@
 }
 
 @media (max-width: 700px) {
+  .editor-legend {
+    padding: 8px 14px;
+    gap: 8px 12px;
+  }
+
   .editor-backdrop,
   .editor-textarea {
-    padding: 28px 24px 16px;
+    padding: 24px 20px 16px;
   }
 
   .editor-empty-overlay {
-    inset: 24px 20px 40px;
+    inset: 16px 12px 24px;
   }
 }

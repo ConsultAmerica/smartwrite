@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <defs>
+    <linearGradient id="sRibbon" x1="16" y1="6" x2="56" y2="62" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4ADE80"/>
+      <stop offset="0.4" stop-color="#16A34A"/>
+      <stop offset="1" stop-color="#14532D"/>
+    </linearGradient>
+    <linearGradient id="wRibbon" x1="44" y1="34" x2="72" y2="70" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BBF7D0"/>
+      <stop offset="0.45" stop-color="#4ADE80"/>
+      <stop offset="1" stop-color="#15803D"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Motion lines + dots -->
+  <g stroke="#22C55E" stroke-linecap="round" stroke-width="2.8">
+    <path d="M5 23h15"/>
+    <path d="M3 31h19"/>
+    <path d="M6 39h14"/>
+    <path d="M8 47h12"/>
+  </g>
+  <circle cx="22.5" cy="23" r="2.2" fill="#22C55E"/>
+  <circle cx="24.5" cy="31" r="2.2" fill="#16A34A"/>
+  <circle cx="22.5" cy="39" r="2.2" fill="#22C55E"/>
+  <circle cx="22.5" cy="47" r="2.2" fill="#16A34A"/>
+
+  <!-- S ribbon stroke -->
+  <path
+    d="M50 15c0-5.8-6.2-10-15.5-10C24.5 5 17 10 17 18.5c0 6 4.2 9.2 14.5 12.2 10.5 3 15.5 7 15.5 14.8C47 55.5 38.5 62 26.5 62c-7.5 0-13.5-2.8-17-7"
+    stroke="url(#sRibbon)"
+    stroke-width="11"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+
+  <!-- Highlight edge on S -->
+  <path
+    d="M48 16c0-4.2-4.8-7.2-12.5-7.2-5.8 0-10 2.2-12 5.2"
+    stroke="#BBF7D0"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    opacity="0.55"
+    fill="none"
+  />
+
+  <!-- Lime W fold (checkmark-style ribbon from S) -->
+  <path
+    d="M40 42 50 64c1.1 2.4 2.9 2.4 4 0L62 46c1-2 2.4-3 4.6-3.2"
+    stroke="url(#wRibbon)"
+    stroke-width="9"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+
+  <!-- White pen nib in / at bottom of S -->
+  <g transform="translate(24 40)">
+    <path
+      d="M8 2 16.5 24.5c.4.9 1.7 1.05 2.4.25L28 10 16 0Z"
+      fill="#F8FAFC"
+      stroke="#14532D"
+      stroke-width="1.15"
+      stroke-linejoin="round"
+    />
+    <circle cx="17.2" cy="13.2" r="2.15" fill="#14532D"/>
+    <path d="M12.2 7.2 20.5 18" stroke="#86EFAC" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+</svg>

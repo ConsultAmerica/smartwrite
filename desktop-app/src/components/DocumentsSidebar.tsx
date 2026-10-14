@@ -3,7 +3,7 @@ import type { Document } from "../types";
 import {
   documentDisplayTitle,
   documentRowMeta,
-  titleCounts,
+  userFacingDocuments,
 } from "../utils/documentList";
 import Logo from "./Logo";
 import "./DocumentsSidebar.css";
@@ -37,8 +37,8 @@ export default function DocumentsSidebar({
   onCollapse,
   onNavigate,
 }: Props) {
-  const counts = useMemo(() => titleCounts(documents), [documents]);
-  const recent = documents.slice(0, 10);
+  const facing = useMemo(() => userFacingDocuments(documents), [documents]);
+  const recent = facing.slice(0, 5);
 
   return (
     <aside
@@ -50,12 +50,17 @@ export default function DocumentsSidebar({
           type="button"
           className="docs-brand-btn"
           onClick={() => {
+            if (collapsed) {
+              onCollapse?.();
+              return;
+            }
             onNavigate?.("home");
             onClose();
           }}
-          aria-label="Go to home"
+          aria-label={collapsed ? "Expand sidebar" : "Go to home"}
+          title={collapsed ? "Expand sidebar" : "Home"}
         >
-          <Logo size={28} />
+          <Logo size={36} showWordmark={!collapsed} />
         </button>
         <div className="docs-brand-actions">
           {onCollapse && (
@@ -63,10 +68,10 @@ export default function DocumentsSidebar({
               type="button"
               className="docs-collapse hide-mobile"
               onClick={onCollapse}
-              aria-label="Collapse sidebar"
-              title="Collapse sidebar"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              «
+              {collapsed ? "»" : "«"}
             </button>
           )}
           <button type="button" className="docs-close" onClick={onClose} aria-label="Close documents">
@@ -75,9 +80,15 @@ export default function DocumentsSidebar({
         </div>
       </div>
 
-      <button type="button" className="docs-create" onClick={onNew}>
+      <button
+        type="button"
+        className="docs-create"
+        onClick={onNew}
+        title="New document"
+        aria-label="New document"
+      >
         <span aria-hidden="true">+</span>
-        New document
+        <span className="docs-create-label">New document</span>
       </button>
 
       <nav className="docs-nav" aria-label="Workspace">
@@ -90,7 +101,7 @@ export default function DocumentsSidebar({
           }}
         >
           <img className="docs-nav-icon" src="/images/nav-home.svg" alt="" width={18} height={18} />
-          Home
+          <span className="docs-nav-label">Home</span>
         </button>
         <button
           type="button"
@@ -101,7 +112,7 @@ export default function DocumentsSidebar({
           }}
         >
           <img className="docs-nav-icon" src="/images/nav-docs.svg" alt="" width={18} height={18} />
-          Documents
+          <span className="docs-nav-label">Documents</span>
         </button>
         <button
           type="button"
@@ -112,14 +123,28 @@ export default function DocumentsSidebar({
           }}
         >
           <img className="docs-nav-icon" src="/images/nav-templates.svg" alt="" width={18} height={18} />
-          Templates
+          <span className="docs-nav-label">Templates</span>
         </button>
       </nav>
 
-      <div className="docs-section-label">Recent</div>
+      <div className="docs-section-head">
+        <span className="docs-section-label">Recent</span>
+        {facing.length > 0 && (
+          <button
+            type="button"
+            className="docs-view-all"
+            onClick={() => {
+              onNavigate?.("documents");
+              onClose();
+            }}
+          >
+            View all <span aria-hidden="true">›</span>
+          </button>
+        )}
+      </div>
       <ul className="docs-list">
         {recent.map((doc) => {
-          const title = documentDisplayTitle(doc, counts);
+          const title = documentDisplayTitle(doc);
           const meta = documentRowMeta(doc);
           return (
             <li key={`${doc.id}-${doc.local_id ?? ""}`} className={activeId === doc.id ? "active" : ""}>
@@ -132,10 +157,9 @@ export default function DocumentsSidebar({
                 }}
                 aria-current={activeId === doc.id ? "page" : undefined}
               >
-                <img className="doc-thumb" src="/images/doc-thumb.svg" alt="" width={28} height={28} />
                 <span className="doc-copy">
                   <span className="doc-title">{title}</span>
-                  <span className="doc-date">{meta.metaLine}</span>
+                  <span className="doc-date">{meta.edited}</span>
                 </span>
               </button>
               <button
@@ -151,7 +175,7 @@ export default function DocumentsSidebar({
           );
         })}
       </ul>
-      {documents.length === 0 && (
+      {facing.length === 0 && (
         <p className="docs-empty">Recent documents appear here.</p>
       )}
 

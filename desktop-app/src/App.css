@@ -5,7 +5,7 @@
   min-height: 100dvh;
   overflow: hidden;
   position: relative;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
 }
 
@@ -58,8 +58,9 @@
   padding: 0;
 }
 
+/* Collapsed = slim icon rail (sidebar stays visible so it can be reopened) */
 .app-body.docs-collapsed .docs-sidebar {
-  display: none;
+  display: flex;
 }
 
 .app-body.insights-collapsed .insights-panel {
@@ -72,8 +73,10 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--bg);
+  background: transparent;
   position: relative;
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .editor-main {
@@ -135,15 +138,11 @@
   display: none;
 }
 
-@media (max-width: 1100px) {
-  .app-body.docs-collapsed .docs-sidebar {
-    display: none;
-  }
-}
+/* Keep the collapsed icon rail available on desktop widths */
 
 @media (max-width: 900px) {
   .insights-panel {
-    width: 300px;
+    width: 340px;
   }
 }
 

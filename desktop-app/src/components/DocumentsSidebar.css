@@ -1,46 +1,59 @@
 .docs-sidebar {
-  width: 248px;
-  flex: 0 0 248px;
+  width: 280px;
+  flex: 0 0 280px;
   display: flex;
   flex-direction: column;
   min-height: 0;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
   overflow: hidden;
+  overscroll-behavior: contain;
+  transition: width 0.16s ease, flex-basis 0.16s ease;
 }
 
 .docs-brand {
-  min-height: 60px;
-  padding: 0 16px;
+  min-height: 76px;
+  /* +4px top vs prior so brand sits slightly lower / aligns with content */
+  padding: 18px 14px 12px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .docs-brand-btn {
   display: flex;
   align-items: center;
   border-radius: 8px;
-  padding: 2px;
+  padding: 4px 8px 6px 2px;
+  overflow: visible;
+  min-width: 0;
+  flex: 1 1 auto;
+  transition: background 0.15s ease;
 }
 
 .docs-brand-btn:hover {
   background: var(--bg-hover);
 }
 
+
 .docs-brand-actions {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex: 0 0 auto;
 }
 
 .docs-collapse,
 .docs-close {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 16px;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .docs-collapse:hover,
@@ -57,36 +70,39 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 4px 14px 16px;
-  padding: 10px 12px;
+  margin: 2px 14px 14px;
+  padding: 11px 14px;
   border: none;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
+  border-radius: 9px;
+  background: var(--accent-gradient);
   color: #fff;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   text-align: left;
-  box-shadow: none;
-  transition: background 0.15s;
+  box-shadow: 0 6px 16px rgba(12, 110, 98, 0.2);
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .docs-create:hover {
   background: var(--accent-hover);
   color: #fff;
+  transform: translateY(-1px);
 }
 
 .docs-create span {
   font-size: 16px;
   line-height: 1;
+  font-weight: 500;
 }
 
 .docs-nav {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 0 10px 12px;
+  gap: 2px;
+  padding: 0 10px 14px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .docs-nav-item {
@@ -94,18 +110,23 @@
   align-items: center;
   gap: 10px;
   text-align: left;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  border-radius: 8px;
   font-size: var(--type-sidebar);
-  font-weight: 500;
+  font-weight: 550;
   color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.docs-nav-item:active:not(:disabled) {
+  transform: scale(0.985);
 }
 
 .docs-nav-icon {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  opacity: 0.75;
+  opacity: 0.72;
 }
 
 .docs-nav-item.active .docs-nav-icon {
@@ -121,7 +142,7 @@
 .docs-nav-item.active-soft {
   background: var(--nav-active-bg);
   color: var(--nav-active-text);
-  font-weight: 600;
+  font-weight: 700;
   box-shadow: inset 2px 0 0 var(--nav-active-bar);
 }
 
@@ -130,13 +151,48 @@
   cursor: not-allowed;
 }
 
+.docs-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 14px 8px;
+}
+
 .docs-section-label {
-  padding: 4px 18px 6px;
-  color: var(--text-subtle);
-  font-size: 12px;
-  font-weight: 550;
-  letter-spacing: 0;
-  text-transform: none;
+  color: var(--neutral);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.docs-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--forest);
+  letter-spacing: -0.01em;
+  padding: 2px 6px;
+  border-radius: 5px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.docs-view-all span {
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.docs-view-all:hover {
+  color: var(--emerald);
+  background: var(--mint);
+}
+
+.docs-view-all:hover span {
+  transform: translateX(2px);
 }
 
 .docs-list {
@@ -150,18 +206,23 @@
 .docs-list li {
   display: flex;
   align-items: center;
-  margin-bottom: 2px;
-  border-radius: var(--radius-sm);
+  margin-bottom: 1px;
+  border-radius: 8px;
+  position: relative;
+}
+
+.docs-list li:hover {
+  background: var(--bg-hover);
 }
 
 .docs-list li.active {
-  background: var(--bg-hover);
+  background: var(--nav-active-bg);
   box-shadow: inset 2px 0 0 var(--nav-active-bar);
 }
 
 .docs-list li.active .doc-title {
-  color: var(--text);
-  font-weight: 650;
+  color: var(--nav-active-text);
+  font-weight: 700;
 }
 
 .doc-item {
@@ -170,15 +231,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
+  padding: 8px 10px;
   text-align: left;
-}
-
-.doc-thumb {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: 6px;
 }
 
 .doc-copy {
@@ -191,7 +245,7 @@
   overflow: hidden;
   color: var(--text);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -199,25 +253,38 @@
 .doc-date {
   display: block;
   margin-top: 2px;
-  color: var(--text-subtle);
+  color: var(--neutral);
   font-size: 11px;
+  font-weight: 500;
 }
 
 .doc-delete {
-  margin-right: 6px;
-  padding: 4px;
-  color: var(--text-subtle);
-  font-size: 16px;
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--neutral);
+  font-size: 15px;
   opacity: 0;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
 }
 
 .docs-list li:hover .doc-delete,
 .doc-delete:focus-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .doc-delete:hover {
   color: var(--error);
+  background: var(--error-bg);
 }
 
 .docs-empty {
@@ -235,11 +302,11 @@
 .docs-settings {
   width: 100%;
   text-align: left;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  border-radius: 8px;
   color: var(--text-muted);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 550;
 }
 
 .docs-settings:hover:not(:disabled) {
@@ -250,6 +317,74 @@
 .docs-settings:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+/* Collapsed icon rail — click » or the SW mark to expand again */
+.docs-sidebar.collapsed {
+  width: 64px;
+  flex: 0 0 64px;
+}
+
+.docs-sidebar.collapsed .docs-brand {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: auto;
+  padding: 12px 8px 8px;
+}
+
+.docs-sidebar.collapsed .docs-brand-btn {
+  flex: 0 0 auto;
+  padding: 4px;
+  justify-content: center;
+}
+
+.docs-sidebar.collapsed .docs-brand-actions {
+  width: 100%;
+  justify-content: center;
+}
+
+.docs-sidebar.collapsed .docs-collapse {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--forest);
+  background: var(--mint);
+}
+
+.docs-sidebar.collapsed .docs-create {
+  margin: 4px 10px 12px;
+  padding: 10px 0;
+  justify-content: center;
+}
+
+.docs-sidebar.collapsed .docs-create-label,
+.docs-sidebar.collapsed .docs-nav-label,
+.docs-sidebar.collapsed .docs-section-head,
+.docs-sidebar.collapsed .docs-list,
+.docs-sidebar.collapsed .docs-empty,
+.docs-sidebar.collapsed .docs-sidebar-footer {
+  display: none;
+}
+
+.docs-sidebar.collapsed .docs-nav {
+  padding: 0 8px;
+  border-bottom: none;
+  margin-bottom: 0;
+  gap: 4px;
+}
+
+.docs-sidebar.collapsed .docs-nav-item {
+  justify-content: center;
+  padding: 10px 0;
+  box-shadow: none;
+}
+
+.docs-sidebar.collapsed .docs-nav-item.active,
+.docs-sidebar.collapsed .docs-nav-item.active-soft {
+  box-shadow: none;
 }
 
 @media (max-width: 1100px) {
@@ -263,11 +398,12 @@
     position: fixed;
     z-index: 101;
     inset: 0 auto 0 0;
-    width: min(280px, calc(100vw - 48px));
+    width: min(288px, calc(100vw - 48px));
     display: flex;
     box-shadow: var(--shadow-lg);
     transform: translateX(calc(-100% - 12px));
-    transition: transform 0.2s ease;
+    transition: transform 0.22s ease;
+    background: var(--bg-sidebar);
   }
 
   .docs-sidebar.open {

@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   commitRevisionIfNewer,
   getCommittedRevision,
+  mergeLocalPreferredDocument,
   readRecoverySnapshot,
+  resolveOpenDocumentState,
   restoreRecoveryIfNewer,
   scopesMatch,
   writeRecoverySnapshot,
@@ -79,5 +81,38 @@ describe("revision-safe persistence", () => {
     expect(readRecoverySnapshot(id)).toBeNull();
     expect(restoreRecoveryIfNewer(id, 5)).toBeNull();
     deleteLocalDraft(id);
+  });
+
+  it("reopen prefers local draft over stale list/server content", () => {
+    const opened = resolveOpenDocumentState({
+      listTitle: "Server title",
+      listContent: "server body",
+      stored: { title: "Local title", content: "accepted rewrite", revision: 4 },
+      recovered: null,
+    });
+    expect(opened.content).toBe("accepted rewrite");
+    expect(opened.title).toBe("Local title");
+    expect(opened.revision).toBe(4);
+    expect(opened.fromRecovery).toBe(false);
+  });
+
+  it("merge keeps newer local draft when server list is older", () => {
+    const local = {
+      id: 9,
+      title: "Local",
+      content: "after accept",
+      updated_at: "2026-10-14T12:00:00.000Z",
+      local_id: "server-9",
+    };
+    const server = {
+      id: 9,
+      title: "Server",
+      content: "old server",
+      updated_at: "2026-10-14T11:00:00.000Z",
+    };
+    const merged = mergeLocalPreferredDocument(server, local);
+    expect(merged.content).toBe("after accept");
+    expect(merged.title).toBe("Local");
+    expect(merged.local_id).toBe("server-9");
   });
 });

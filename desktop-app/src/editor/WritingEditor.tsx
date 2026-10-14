@@ -28,7 +28,7 @@ interface Props {
   hoveredIssueId: string | null;
   onIssueClick: (issue: GrammarIssue) => void;
   onIssueHover: (issueId: string | null) => void;
-  onApplyFromEditor: (issue: GrammarIssue) => void;
+  onApplyFromEditor: (issue: GrammarIssue, replacement?: string) => void;
   onIgnoreFromEditor?: (issue: GrammarIssue) => void;
   onAskAgentFromEditor?: (issue: GrammarIssue) => void;
   selection: { start: number; end: number };
@@ -71,6 +71,29 @@ function issueColor(type: string): string {
   }
 }
 
+/** QuillBot-style underline treatment by issue family. */
+function issueMarkStyle(type: string): string {
+  switch (type) {
+    case "spelling":
+      return "wavy";
+    case "grammar":
+    case "punctuation":
+      return "solid";
+    case "clarity":
+    case "vague_wording":
+    case "passive_voice":
+    case "long_sentence":
+      return "solid";
+    case "tone_issue":
+    case "casual_wording":
+    case "informal":
+    case "blunt_wording":
+      return "double";
+    default:
+      return "dotted";
+  }
+}
+
 function buildHighlightHtml(
   text: string,
   issues: GrammarIssue[],
@@ -92,7 +115,8 @@ function buildHighlightHtml(
       const active = issue.id === activeId ? " active" : "";
       const hovered = issue.id === hoveredId ? " hovered" : "";
       const color = issueColor(issue.issue_type);
-      html += `<mark class="issue-mark${active}${hovered}" data-id="${issue.id}" style="--mark-color:${color}">${escapeHtml(text.slice(start, end))}</mark>`;
+      const style = issueMarkStyle(issue.issue_type);
+      html += `<mark class="issue-mark mark-${style}${active}${hovered}" data-id="${issue.id}" style="--mark-color:${color}">${escapeHtml(text.slice(start, end))}</mark>`;
       cursor = end;
     }
   }
@@ -100,6 +124,18 @@ function buildHighlightHtml(
     html += escapeHtml(text.slice(cursor));
   }
   return html.replace(/\n/g, "<br/>");
+}
+
+function issueAtPoint(
+  textarea: HTMLTextAreaElement,
+  clientX: number,
+  clientY: number
+): HTMLElement | null {
+  const prev = textarea.style.pointerEvents;
+  textarea.style.pointerEvents = "none";
+  const el = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+  textarea.style.pointerEvents = prev;
+  return el?.closest?.("[data-id]") as HTMLElement | null;
 }
 
 const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEditor(
@@ -124,9 +160,14 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
-  const [popup, setPopup] = useState<{ issue: GrammarIssue; top: number; left: number } | null>(
-    null
-  );
+  const leaveTimer = useRef<number | null>(null);
+  const pinnedRef = useRef(false);
+  const [popup, setPopup] = useState<{
+    issue: GrammarIssue;
+    top: number;
+    left: number;
+    pinned: boolean;
+  } | null>(null);
 
   const stats = useMemo(() => getTextStats(text), [text]);
 
@@ -144,6 +185,36 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
     }
   }, []);
 
+  const clearLeaveTimer = useCallback(() => {
+    if (leaveTimer.current != null) {
+      window.clearTimeout(leaveTimer.current);
+      leaveTimer.current = null;
+    }
+  }, []);
+
+  const hidePopup = useCallback(() => {
+    if (pinnedRef.current) return;
+    setPopup(null);
+    onIssueHover(null);
+  }, [onIssueHover]);
+
+  const showIssuePopup = useCallback(
+    (issue: GrammarIssue, markEl: HTMLElement, pinned = false) => {
+      const container = editorRef.current?.getBoundingClientRect();
+      if (!container) return;
+      const rect = markEl.getBoundingClientRect();
+      pinnedRef.current = pinned;
+      onIssueHover(issue.id);
+      setPopup({
+        issue,
+        top: Math.min(rect.bottom - container.top + 8, container.height - 180),
+        left: Math.max(8, Math.min(rect.left - container.left, container.width - 280)),
+        pinned,
+      });
+    },
+    [onIssueHover]
+  );
+
   useImperativeHandle(ref, () => ({
     scrollToIssue(issue: GrammarIssue) {
       const ta = textareaRef.current;
@@ -155,6 +226,13 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
       ta.setSelectionRange(issue.offset, issue.offset + issue.length);
       ta.scrollTop = Math.max(0, lines * lineHeight - ta.clientHeight / 3);
       syncScroll();
+      // Open popover near the selected mark after scroll paints
+      window.requestAnimationFrame(() => {
+        const mark = backdropRef.current?.querySelector(
+          `[data-id="${CSS.escape(issue.id)}"]`
+        ) as HTMLElement | null;
+        if (mark) showIssuePopup(issue, mark, true);
+      });
     },
     focusEditor() {
       textareaRef.current?.focus();
@@ -189,107 +267,142 @@ const WritingEditor = forwardRef<WritingEditorHandle, Props>(function WritingEdi
   }));
 
   useEffect(() => {
-    const backdrop = backdropRef.current;
-    if (!backdrop) return;
-
-    const onClick = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest("[data-id]") as HTMLElement | null;
-      if (!target?.dataset.id) return;
-      const issue = issues.find((i) => i.id === target.dataset.id);
-      if (issue) onIssueClick(issue);
-    };
-
-    const onMouseOver = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest("[data-id]") as HTMLElement | null;
-      if (!target?.dataset.id) {
-        setPopup(null);
-        onIssueHover(null);
-        return;
-      }
-      const issue = issues.find((i) => i.id === target.dataset.id);
-      if (!issue) return;
-      onIssueHover(issue.id);
-      const rect = target.getBoundingClientRect();
-      const container = editorRef.current?.getBoundingClientRect();
-      if (!container) return;
-      setPopup({
-        issue,
-        top: rect.bottom - container.top + 6,
-        left: Math.min(rect.left - container.left, container.width - 220),
-      });
-    };
-
-    const onMouseOut = (e: MouseEvent) => {
-      const related = e.relatedTarget as HTMLElement | null;
-      if (related?.closest(".issue-popup") || related?.closest(".issue-mark")) return;
+    // Close pinned popover when the issue list changes away from that issue
+    if (!popup) return;
+    if (!issues.some((i) => i.id === popup.issue.id)) {
+      pinnedRef.current = false;
       setPopup(null);
-      onIssueHover(null);
-    };
-
-    backdrop.addEventListener("click", onClick);
-    backdrop.addEventListener("mouseover", onMouseOver);
-    backdrop.addEventListener("mouseout", onMouseOut);
-    return () => {
-      backdrop.removeEventListener("click", onClick);
-      backdrop.removeEventListener("mouseover", onMouseOver);
-      backdrop.removeEventListener("mouseout", onMouseOut);
-    };
-  }, [issues, onIssueClick, onIssueHover, syncScroll]);
+    }
+  }, [issues, popup]);
 
   return (
     <div className="writing-editor" ref={editorRef}>
-      <div className="editor-backdrop" ref={backdropRef} aria-hidden="true">
-        <div className="editor-highlight" dangerouslySetInnerHTML={{ __html: highlightHtml || "&nbsp;" }} />
+      <div className="editor-legend" aria-label="Suggestion colors">
+        <span className="legend-item legend-correctness">Spelling / grammar</span>
+        <span className="legend-item legend-clarity">Clarity</span>
+        <span className="legend-item legend-tone">Tone</span>
+        <span className="legend-item legend-style">Style</span>
       </div>
-      <textarea
-        ref={textareaRef}
-        className="editor-textarea"
-        aria-label="Document editor"
-        value={text}
-        onChange={(e) => onChange(e.target.value)}
-        onScroll={syncScroll}
-        placeholder=""
-        spellCheck={false}
-      />
 
-      {!text.trim() && emptyOverlay ? (
-        <div className="editor-empty-overlay">{emptyOverlay}</div>
-      ) : null}
-
-      {popup && (
-        <SuggestionPopover
-          issue={popup.issue}
-          top={popup.top}
-          left={popup.left}
-          onAccept={() => {
-            onApplyFromEditor(popup.issue);
+      <div className="editor-surface">
+        <div className="editor-backdrop" ref={backdropRef} aria-hidden="true">
+          <div
+            className="editor-highlight"
+            dangerouslySetInnerHTML={{ __html: highlightHtml || "&nbsp;" }}
+          />
+        </div>
+        <textarea
+          ref={textareaRef}
+          className="editor-textarea"
+          aria-label="Document editor — type or paste text to check"
+          value={text}
+          onChange={(e) => {
+            pinnedRef.current = false;
             setPopup(null);
+            onChange(e.target.value);
           }}
-          onIgnore={() => {
-            onIgnoreFromEditor?.(popup.issue);
-            setPopup(null);
+          onScroll={syncScroll}
+          placeholder="Paste or start typing — suggestions appear as you write"
+          spellCheck={false}
+          onMouseMove={(e) => {
+            if (pinnedRef.current) return;
+            const ta = textareaRef.current;
+            if (!ta || !text.trim()) return;
+            const mark = issueAtPoint(ta, e.clientX, e.clientY);
+            if (!mark?.dataset.id) {
+              clearLeaveTimer();
+              leaveTimer.current = window.setTimeout(hidePopup, 160);
+              return;
+            }
+            clearLeaveTimer();
+            const issue = issues.find((i) => i.id === mark.dataset.id);
+            if (!issue) return;
+            if (popup?.issue.id === issue.id) return;
+            showIssuePopup(issue, mark, false);
           }}
-          onAskAgent={
-            onAskAgentFromEditor
-              ? () => {
-                  onAskAgentFromEditor(popup.issue);
-                  setPopup(null);
-                }
-              : undefined
-          }
-          onClose={() => {
-            setPopup(null);
-            onIssueHover(null);
+          onMouseLeave={() => {
+            if (pinnedRef.current) return;
+            clearLeaveTimer();
+            leaveTimer.current = window.setTimeout(hidePopup, 220);
+          }}
+          onClick={(e) => {
+            const ta = textareaRef.current;
+            if (!ta) return;
+            const mark = issueAtPoint(ta, e.clientX, e.clientY);
+            if (!mark?.dataset.id) {
+              pinnedRef.current = false;
+              setPopup(null);
+              onIssueHover(null);
+              return;
+            }
+            const issue = issues.find((i) => i.id === mark.dataset.id);
+            if (!issue) return;
+            onIssueClick(issue);
+            showIssuePopup(issue, mark, true);
           }}
         />
-      )}
+
+        {!text.trim() && emptyOverlay ? (
+          <div className="editor-empty-overlay">{emptyOverlay}</div>
+        ) : null}
+
+        {popup && (
+          <SuggestionPopover
+            issue={popup.issue}
+            top={popup.top}
+            left={popup.left}
+            pinned={popup.pinned}
+            documentText={text}
+            onAccept={(replacement) => {
+              onApplyFromEditor(popup.issue, replacement);
+              pinnedRef.current = false;
+              setPopup(null);
+            }}
+            onIgnore={() => {
+              onIgnoreFromEditor?.(popup.issue);
+              pinnedRef.current = false;
+              setPopup(null);
+            }}
+            onAskAgent={
+              onAskAgentFromEditor
+                ? () => {
+                    onAskAgentFromEditor(popup.issue);
+                    pinnedRef.current = false;
+                    setPopup(null);
+                  }
+                : undefined
+            }
+            onClose={() => {
+              pinnedRef.current = false;
+              setPopup(null);
+              onIssueHover(null);
+            }}
+            onMouseEnterPopover={clearLeaveTimer}
+            onMouseLeavePopover={() => {
+              if (pinnedRef.current) return;
+              clearLeaveTimer();
+              leaveTimer.current = window.setTimeout(hidePopup, 180);
+            }}
+          />
+        )}
+      </div>
 
       <footer className="editor-footer">
         <span>{stats.words === 1 ? "1 word" : `${stats.words} words`}</span>
         <span className="sep">|</span>
-        <span>{stats.sentences} sentence{stats.sentences !== 1 ? "s" : ""}</span>
+        <span>
+          {stats.sentences} sentence{stats.sentences !== 1 ? "s" : ""}
+        </span>
         <span className="sep">|</span>
         <span>Reading time: {stats.readingLabel}</span>
+        {visibleIssues.length > 0 && (
+          <>
+            <span className="sep">|</span>
+            <span className="footer-issues">
+              {visibleIssues.length} suggestion{visibleIssues.length !== 1 ? "s" : ""}
+            </span>
+          </>
+        )}
         <span className="sep">|</span>
         <span className={`save-status ${saveStatus}`}>
           {saveStatus === "saving"

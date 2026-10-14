@@ -14,8 +14,10 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(280px 140px at 100% 0%, rgba(5, 150, 105, 0.08), transparent 70%),
+    #fff;
   box-shadow: var(--shadow-lg);
   animation: drawer-enter 0.18s ease-out;
 }
@@ -90,11 +92,13 @@
 
 .ai-ask-form button {
   padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  background: var(--ai);
+  border: none;
+  border-radius: var(--btn-radius, 8px);
+  background: var(--accent-gradient);
   color: #fff;
   font-size: var(--type-meta);
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 6px 14px rgba(6, 78, 59, 0.16);
 }
 
 .ai-ask-form button:disabled {

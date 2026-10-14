@@ -1,46 +1,73 @@
 .helpfulness-prompt {
   position: fixed;
   z-index: 80;
-  right: 20px;
-  bottom: 72px;
-  display: flex;
-  flex-wrap: wrap;
+  left: 20px;
+  bottom: 88px; /* slightly raised */
+  display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
-  max-width: min(360px, calc(100vw - 40px));
-  padding: 8px 10px;
+  gap: 4px;
+  width: auto;
+  max-width: min(220px, calc(100vw - 40px));
+  padding: 5px 8px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-elevated, var(--bg));
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 14px rgba(18, 32, 28, 0.08);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 550;
+  backdrop-filter: blur(8px);
+  animation: helpfulness-in 0.18s ease both;
+}
+
+@keyframes helpfulness-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .helpfulness-prompt > span {
   margin-right: 2px;
+  white-space: nowrap;
 }
 
 .helpfulness-prompt button {
-  padding: 4px 8px;
+  padding: 2px 6px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 999px;
   background: transparent;
   color: var(--text);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.2;
   cursor: pointer;
 }
 
 .helpfulness-prompt button:hover {
   border-color: var(--border);
-  background: var(--bg-elevated);
+  background: var(--bg-hover);
 }
 
 .helpfulness-reason {
   color: var(--text-muted) !important;
+  font-size: 11px !important;
 }
 
 .helpfulness-dismiss {
-  margin-left: auto;
+  margin-left: 2px;
   color: var(--text-subtle) !important;
+  font-size: 12px !important;
+  padding: 0 4px !important;
+}
+
+@media (max-width: 768px) {
+  .helpfulness-prompt {
+    left: 12px;
+    bottom: 84px;
+  }
 }
