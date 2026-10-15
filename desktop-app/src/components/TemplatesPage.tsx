@@ -9,7 +9,7 @@ import {
 } from "../constants/templates";
 import type { DocumentTemplate, TemplateCategory } from "../types";
 import { trackBetaEvent } from "../services/betaAnalytics";
-import { assetUrl } from "../utils/assets";
+import { resolveTemplateImage } from "../utils/templateImages";
 import TemplatePreviewDrawer from "./TemplatePreviewDrawer";
 import "./TemplatesPage.css";
 
@@ -46,7 +46,7 @@ function TemplateCard({
       onClick={() => onSelect(template)}
     >
       <span className="templates-card-image" aria-hidden="true">
-        <img src={assetUrl(template.image)} alt="" width={320} height={140} />
+        <img src={resolveTemplateImage(template.image)} alt="" width={320} height={140} />
         <span className="templates-card-overlay">Preview</span>
       </span>
       <span className="templates-card-copy">

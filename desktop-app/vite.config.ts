@@ -3,7 +3,9 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  base: "./",
+  // Vercel serves from domain root; Electron loadFile needs relative assets.
+  base: process.env.VERCEL ? "/" : "./",
+  publicDir: "public",
   test: {
     environment: "jsdom",
     include: ["src/**/*.{test,spec}.{ts,tsx}"],

@@ -7,7 +7,7 @@ import {
   titleCounts as buildTitleCounts,
   userFacingDocuments,
 } from "../utils/documentList";
-import { assetUrl } from "../utils/assets";
+import { resolveTemplateImage } from "../utils/templateImages";
 import { IconDocThumb } from "./icons";
 import "./HomeDashboard.css";
 
@@ -264,7 +264,7 @@ export default function HomeDashboard({
               <li key={template.id}>
                 <button type="button" className="home-template-card" onClick={() => onOpenTemplate(template.id)}>
                   <span className="home-template-image" aria-hidden="true">
-                    <img src={assetUrl(template.image)} alt="" width={160} height={72} />
+                    <img src={resolveTemplateImage(template.image)} alt="" width={160} height={72} />
                     <span className="home-template-overlay">Open</span>
                   </span>
                   <span className="home-template-copy">

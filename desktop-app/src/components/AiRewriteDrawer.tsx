@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { AiRewritePreview, ToneMode } from "../types";
-import { assetUrl } from "../utils/assets";
+import askPanelUrl from "../assets/brand/ask-panel.svg";
 import "./AiRewriteDrawer.css";
 
 interface Props {
@@ -57,7 +57,7 @@ export default function AiRewriteDrawer({
       >
         <header className="ai-drawer-header">
           <div className="ai-drawer-title">
-            <img className="ai-drawer-mark" src={assetUrl("images/ask-panel.svg")} alt="" width={40} height={40} />
+            <img className="ai-drawer-mark" src={askPanelUrl} alt="" width={40} height={40} />
             <div>
               <h2>Ask SmartWrite</h2>
               <p>Improve selection or document</p>

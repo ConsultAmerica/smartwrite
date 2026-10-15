@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { assetUrl } from "../utils/assets";
+/* Bundled into /assets so logo works even when Vercel omits public/images */
+import markUrl from "../assets/brand/smartwrite-mark.png";
+import scriptUrl from "../assets/brand/smartwrite-script-wordmark.png";
 import "./Logo.css";
 
 interface Props {
@@ -9,8 +11,6 @@ interface Props {
   /** @deprecated Tagline is no longer used in the product shell. */
   showTagline?: boolean;
 }
-
-const V = "28";
 
 /**
  * Brand system:
@@ -40,7 +40,7 @@ export default function Logo({
       ) : (
         <img
           className="brand-app-icon"
-          src={`${assetUrl("images/smartwrite-mark.png")}?v=${V}`}
+          src={markUrl}
           alt=""
           width={iconPx}
           height={iconPx}
@@ -56,7 +56,7 @@ export default function Logo({
           ) : (
             <img
               className="brand-script"
-              src={`${assetUrl("images/smartwrite-script-wordmark.png")}?v=${V}`}
+              src={scriptUrl}
               alt="SmartWrite"
               draggable={false}
               onError={() => setScriptFailed(true)}
