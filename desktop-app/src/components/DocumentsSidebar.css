@@ -127,6 +127,8 @@
   height: 18px;
   flex-shrink: 0;
   opacity: 0.72;
+  display: block;
+  color: inherit;
 }
 
 .docs-nav-item.active .docs-nav-icon {

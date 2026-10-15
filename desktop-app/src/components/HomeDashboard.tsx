@@ -7,6 +7,8 @@ import {
   titleCounts as buildTitleCounts,
   userFacingDocuments,
 } from "../utils/documentList";
+import { assetUrl } from "../utils/assets";
+import { IconDocThumb } from "./icons";
 import "./HomeDashboard.css";
 
 interface Props {
@@ -229,7 +231,7 @@ export default function HomeDashboard({
                       onClick={() => onOpenDocument(doc)}
                     >
                       <span className="home-recent-thumb" aria-hidden="true">
-                        <img src="/images/doc-thumb.svg" alt="" width={36} height={36} />
+                        <IconDocThumb size={36} />
                       </span>
                       <span className="home-recent-main">
                         <span className="home-recent-title">{title}</span>
@@ -262,7 +264,7 @@ export default function HomeDashboard({
               <li key={template.id}>
                 <button type="button" className="home-template-card" onClick={() => onOpenTemplate(template.id)}>
                   <span className="home-template-image" aria-hidden="true">
-                    <img src={template.image} alt="" width={160} height={72} />
+                    <img src={assetUrl(template.image)} alt="" width={160} height={72} />
                     <span className="home-template-overlay">Open</span>
                   </span>
                   <span className="home-template-copy">

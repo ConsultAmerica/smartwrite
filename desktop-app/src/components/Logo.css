@@ -24,6 +24,29 @@
   border-radius: 9px;
 }
 
+.brand-app-icon-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #065f46;
+  color: #ecfdf5;
+  font-family: Outfit, Manrope, system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.brand-script-fallback {
+  display: block;
+  font-family: Outfit, Manrope, system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
 .brand-divider {
   display: block;
   width: 1px;

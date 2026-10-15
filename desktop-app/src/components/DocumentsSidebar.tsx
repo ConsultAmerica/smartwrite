@@ -6,6 +6,7 @@ import {
   userFacingDocuments,
 } from "../utils/documentList";
 import Logo from "./Logo";
+import { IconDocs, IconHome, IconTemplates } from "./icons";
 import "./DocumentsSidebar.css";
 
 export type SidebarNav = "home" | "documents" | "templates";
@@ -100,7 +101,7 @@ export default function DocumentsSidebar({
             onClose();
           }}
         >
-          <img className="docs-nav-icon" src="/images/nav-home.svg" alt="" width={18} height={18} />
+          <IconHome className="docs-nav-icon" size={18} />
           <span className="docs-nav-label">Home</span>
         </button>
         <button
@@ -111,7 +112,7 @@ export default function DocumentsSidebar({
             onClose();
           }}
         >
-          <img className="docs-nav-icon" src="/images/nav-docs.svg" alt="" width={18} height={18} />
+          <IconDocs className="docs-nav-icon" size={18} />
           <span className="docs-nav-label">Documents</span>
         </button>
         <button
@@ -122,7 +123,7 @@ export default function DocumentsSidebar({
             onClose();
           }}
         >
-          <img className="docs-nav-icon" src="/images/nav-templates.svg" alt="" width={18} height={18} />
+          <IconTemplates className="docs-nav-icon" size={18} />
           <span className="docs-nav-label">Templates</span>
         </button>
       </nav>

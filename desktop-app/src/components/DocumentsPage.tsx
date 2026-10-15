@@ -9,6 +9,7 @@ import {
   type DocumentTypeFilter,
 } from "../utils/documentList";
 import { sanitizeDocumentTitle } from "../utils/title";
+import { IconDocThumb } from "./icons";
 import "./DocumentsPage.css";
 
 interface Props {
@@ -229,7 +230,7 @@ export default function DocumentsPage({
                       }}
                     >
                       <span className="documents-page-name">
-                        <img src="/images/doc-thumb.svg" alt="" width={28} height={28} />
+                        <IconDocThumb size={28} />
                         {renaming ? (
                           <input
                             ref={editRef}
